@@ -19,6 +19,7 @@ import 'settings_screen.dart';
 import 'sftp_screen.dart';
 import 'shortcut_screen.dart';
 import 'terminal_tabs_screen.dart';
+import 'web_shortcut_screen.dart';
 
 class HostListScreen extends StatefulWidget {
   const HostListScreen({super.key});
@@ -118,6 +119,12 @@ class _HostListScreenState extends State<HostListScreen> {
   void _openShortcuts() {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const ShortcutScreen()),
+    );
+  }
+
+  void _openWebShortcuts() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const WebShortcutScreen()),
     );
   }
 
@@ -405,6 +412,7 @@ class _HostListScreenState extends State<HostListScreen> {
               if (value == 'import_qr') _importFromMac();
               if (value == 'groups') _openGroups();
               if (value == 'shortcuts') _openShortcuts();
+              if (value == 'web_shortcuts') _openWebShortcuts();
               if (value == 'settings') _openSettings();
               if (value == 'login') _login();
               if (value == 'logout') _logout();
@@ -437,7 +445,11 @@ class _HostListScreenState extends State<HostListScreen> {
                 ),
                 PopupMenuItem<String>(
                   value: 'shortcuts',
-                  child: _menuRow(Icons.bolt_outlined, 'Kelola Shortcut'),
+                  child: _menuRow(Icons.bolt_outlined, 'Command Shortcut'),
+                ),
+                PopupMenuItem<String>(
+                  value: 'web_shortcuts',
+                  child: _menuRow(Icons.apps_outlined, 'Web Shortcut'),
                 ),
                 PopupMenuItem<String>(
                   value: 'settings',
