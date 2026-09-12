@@ -5,10 +5,12 @@ import '../auth/auth_service.dart';
 import '../data/host_repository.dart';
 import '../models/host_group.dart';
 import '../models/ssh_host.dart';
+import '../session/session_manager.dart';
 import 'host_edit_screen.dart';
 import 'host_group_screen.dart';
 import 'login_screen.dart';
 import 'qr_import_screen.dart';
+import 'session_switcher_screen.dart';
 import 'terminal_screen.dart';
 
 class HostListScreen extends StatefulWidget {
@@ -62,6 +64,12 @@ class _HostListScreenState extends State<HostListScreen> {
       MaterialPageRoute(builder: (_) => const QrImportScreen()),
     );
     _reload();
+  }
+
+  void _openSessions() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SessionSwitcherScreen()),
+    );
   }
 
   Future<void> _delete(SshHost host) async {
@@ -194,9 +202,23 @@ class _HostListScreenState extends State<HostListScreen> {
       appBar: AppBar(
         title: const Text('Termul'),
         actions: [
+          Consumer<SessionManager>(
+            builder: (context, manager, _) {
+              final count = manager.sessions.length;
+              return IconButton(
+                icon: Badge(
+                  isLabelVisible: count > 0,
+                  label: Text('$count'),
+                  child: const Icon(Icons.terminal),
+                ),
+                tooltip: 'Sesi Aktif',
+                onPressed: _openSessions,
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.qr_code_scanner),
-            tooltip: 'Import dari Mac',
+            tooltip: 'Import dari Komputer',
             onPressed: _importFromMac,
           ),
           IconButton(

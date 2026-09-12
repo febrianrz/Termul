@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'auth/auth_service.dart';
 import 'data/host_repository.dart';
 import 'screens/host_list_screen.dart';
+import 'session/session_manager.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -28,6 +29,9 @@ class TermulApp extends StatelessWidget {
       providers: [
         Provider<HostRepository>.value(value: hostRepository),
         Provider<AuthService>(create: (_) => AuthService()),
+        ChangeNotifierProvider<SessionManager>(
+          create: (_) => SessionManager(),
+        ),
       ],
       child: MaterialApp(
         title: 'Termul',
