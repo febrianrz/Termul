@@ -67,7 +67,7 @@ class _QrImportScreenState extends State<QrImportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Import dari Mac'),
+        title: const Text('Import dari Komputer'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -82,8 +82,8 @@ class _QrImportScreenState extends State<QrImportScreen> {
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             padding: const EdgeInsets.all(12),
             child: const Text(
-              'Jalankan "termul" di Mac (lihat agent/README.md), lalu scan '
-              'QR yang muncul satu per satu.',
+              'Jalankan "termul" di Mac/Linux (lihat agent/README.md), lalu '
+              'scan QR yang muncul satu per satu.',
               textAlign: TextAlign.center,
             ),
           ),

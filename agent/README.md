@@ -11,9 +11,10 @@ own phone's camera to read.
 curl -fsSL https://raw.githubusercontent.com/febrianrz/Termul/main/agent/install.sh | sh
 ```
 
-This installs a `termul` command and, on macOS with Homebrew, installs its
-one dependency ([`qrencode`](https://fukuchi.org/works/qrencode/)) if it's
-missing.
+Works on macOS and Linux (bash + standard Unix tools only). This installs
+a `termul` command and installs its one dependency
+([`qrencode`](https://fukuchi.org/works/qrencode/)) if it's missing, via
+Homebrew, apt, dnf, pacman, or zypper — whichever is available.
 
 ## Use
 
@@ -28,7 +29,7 @@ Pick the ones you want (space-separated numbers), and it shows one QR code
 per host, one at a time — press Enter after each is scanned to move to the
 next.
 
-In the TerMul app, open **Import dari Mac** from the host list and scan
+In the TerMul app, open **Import dari Komputer** from the host list and scan
 each code as it appears; it opens the usual add-host form pre-filled so you
 can review (or fix the address/username, if it wasn't in your ssh config)
 before saving.

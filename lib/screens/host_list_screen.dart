@@ -218,7 +218,7 @@ class _HostListScreenState extends State<HostListScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.qr_code_scanner),
-            tooltip: 'Import dari Mac',
+            tooltip: 'Import dari Komputer',
             onPressed: _importFromMac,
           ),
           IconButton(
