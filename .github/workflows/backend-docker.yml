@@ -28,16 +28,28 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      # The namespace segment of a Docker image reference must be lowercase
+      # and can't contain "@" or other special characters - but some
+      # registries (e.g. Harbor) log in with an email address, which isn't
+      # valid there. Set DOCKER_IMAGE_NAMESPACE to override it explicitly
+      # (e.g. to your Harbor "project" name); otherwise it's derived from
+      # DOCKER_USERNAME by dropping anything after "@" and sanitizing it.
       - name: Compute image name
         id: image
         env:
           REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
           USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          NAMESPACE: ${{ secrets.DOCKER_IMAGE_NAMESPACE }}
         run: |
+          namespace="$NAMESPACE"
+          if [ -z "$namespace" ]; then
+            namespace=$(printf '%s' "$USERNAME" | cut -d@ -f1 | tr -d '\n' | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '-' | sed -e 's/^-*//' -e 's/-*$//')
+          fi
+
           if [ -n "$REGISTRY" ]; then
-            echo "name=$REGISTRY/$USERNAME/termul-backend" >> "$GITHUB_OUTPUT"
+            echo "name=$REGISTRY/$namespace/termul-backend" >> "$GITHUB_OUTPUT"
           else
-            echo "name=$USERNAME/termul-backend" >> "$GITHUB_OUTPUT"
+            echo "name=$namespace/termul-backend" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build and push
