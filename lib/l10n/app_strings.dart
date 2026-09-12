@@ -86,4 +86,35 @@ class AppStrings {
     'Shortcut "$name" akan dihapus.',
     'Shortcut "$name" will be deleted.',
   );
+
+  // ---------------------------------------------------------------------
+  // Settings
+  // ---------------------------------------------------------------------
+  String get settingsTitle => _t('Pengaturan', 'Settings');
+  String get theme => _t('Tema', 'Theme');
+  String get security => _t('Keamanan', 'Security');
+  String get about => _t('Tentang', 'About');
+  String get lockWithBiometrics =>
+      _t('Kunci dengan biometrik', 'Lock with biometrics');
+  String get lockWithBiometricsSubtitle => _t(
+    'Minta sidik jari/PIN perangkat setiap kali membuka Termul, '
+    'atau setelah 10 menit tidak disentuh',
+    'Ask for your device fingerprint/PIN every time Termul opens, '
+    'or after 10 minutes idle',
+  );
+  String get loadingVersion => _t('Memuat versi...', 'Loading version...');
+  String versionLabel(String version, String build) =>
+      _t('Versi $version ($build)', 'Version $version ($build)');
+  String get checkForUpdates => _t('Cek Pembaruan', 'Check for Updates');
+  String get updateCheckFailed => _t(
+    'Tidak bisa mengecek pembaruan. Coba lagi nanti.',
+    'Could not check for updates. Try again later.',
+  );
+  String upToDate(int build) =>
+      _t('Sudah versi terbaru (build $build).', 'Already up to date (build $build).');
+  String get updateAvailableTitle => _t('Update tersedia', 'Update available');
+  String updateAvailableBody(int build) => _t(
+    'Build $build sudah tersedia di GitHub.',
+    'Build $build is available on GitHub.',
+  );
 }
