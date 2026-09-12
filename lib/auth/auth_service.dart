@@ -29,6 +29,14 @@ class AuthService {
   }
 
   Future<void> login() async {
+    if (SsoConfig.clientId.isEmpty) {
+      throw AuthException(
+        'SSO belum dikonfigurasi: SSO_CLIENT_ID kosong. '
+        'Build ulang dengan --dart-define=SSO_CLIENT_ID=... '
+        '(lihat README bagian "Forking").',
+      );
+    }
+
     final state = const Uuid().v4();
     final authorizeUrl = Uri.parse('${SsoConfig.baseUrl}/oauth/authorize')
         .replace(

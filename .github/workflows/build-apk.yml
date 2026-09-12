@@ -28,6 +28,13 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Verify SSO_CLIENT_ID secret is set
+        run: |
+          if [ -z "${{ secrets.SSO_CLIENT_ID }}" ]; then
+            echo "::error::Repository secret SSO_CLIENT_ID is not set. Without it the APK is built with an empty client_id, and SSO login fails with a confusing 'unsupported_grant_type' error from the SSO server. Set it under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
       - name: Build release APK
         env:
           SSO_CLIENT_ID: ${{ secrets.SSO_CLIENT_ID }}
@@ -69,6 +76,13 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Verify SSO_CLIENT_ID secret is set
+        run: |
+          if [ -z "${{ secrets.SSO_CLIENT_ID }}" ]; then
+            echo "::error::Repository secret SSO_CLIENT_ID is not set. Without it the build is compiled with an empty client_id, and SSO login fails with a confusing 'unsupported_grant_type' error from the SSO server. Set it under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
 
       # Unsigned build: validates the app compiles for iOS. It does not
       # produce an installable IPA - that needs an Apple Developer account,
