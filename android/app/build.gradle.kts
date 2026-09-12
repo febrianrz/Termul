@@ -22,7 +22,10 @@ if (hasReleaseKeystore) {
 
 android {
     namespace = "com.febrianrz.termul"
-    compileSdk = flutter.compileSdkVersion
+    // file_picker's flutter_plugin_android_lifecycle dependency requires
+    // compiling against API 36+; flutter.compileSdkVersion (34 on the
+    // Flutter version this CI uses) is too old for it.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
