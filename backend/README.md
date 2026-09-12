@@ -92,6 +92,27 @@ Redeploying a new version is just steps 3 again once `backend-docker.yml`
 has pushed an updated `:latest` image (`docker compose pull && docker
 compose up -d`, or the equivalent `docker pull` + `docker run`).
 
+### Deploying via a PaaS (Dokploy, Coolify, etc.)
+
+These tools build directly from the git repo instead of pulling a
+pre-built image. Since `backend/` is a subdirectory of this repo (not its
+own repo), point the tool's "build path"/"root directory" at `backend`.
+
+If the build fails with something like `COPY src ./src` or
+`COPY tsconfig.json ./` saying the file wasn't found, while
+`COPY package*.json ./` reports success — that's not a real success. A
+wildcard `COPY` matching zero files silently no-ops on some BuildKit
+versions, while a literal-path `COPY` fails loudly; seeing both together
+means the tool sent an **empty build context** for that subdirectory, a
+build-path bug on the tool's end rather than anything wrong in this repo
+(the file is committed and present in `backend/`). Look for a "force
+rebuild" / clear-build-cache option and retry, or try disconnecting and
+reconnecting the repo. If the tool offers a "Docker Compose" build type
+as an alternative to a raw "Dockerfile" build type, pointing it at
+`backend/docker-compose.yml` (which has a `build:` section) sometimes
+avoids the same bug, since compose-based builds tend to be a more
+heavily-used code path in these tools.
+
 ## Environment variables
 
 | Variable | Required | Default |
