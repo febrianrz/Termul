@@ -54,7 +54,13 @@ dependencies:
   package_info_plus: ^9.0.1
   # SFTP file browser: pick a local file to upload, and locate a folder to
   # save downloads into.
-  file_picker: ^9.2.3
+  # Pinned >=11.0.3: earlier versions hardcode compileSdk 34 in their own
+  # android/build.gradle (unrelated to our app's compileSdk setting), which
+  # fails AAR metadata checks against flutter_plugin_android_lifecycle's
+  # compileSdk 36+ requirement. 11.0.3 fixed it to read
+  # `flutter.compileSdkVersion` instead. Stay below 12.x for now - that's a
+  # bigger federated-plugin split (separate android_file_picker package).
+  file_picker: ^11.0.3
   path_provider: ^2.1.5
   # Opens the GitHub release page from the in-app update checker.
   url_launcher: ^6.3.2

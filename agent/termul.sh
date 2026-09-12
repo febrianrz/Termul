@@ -128,12 +128,31 @@ if [ -z "$SELECTION" ]; then
   exit 0
 fi
 
-total=0
-for _ in $SELECTION; do total=$((total + 1)); done
+# Pack selected hosts into as few QR codes as possible instead of always
+# one per host: a QR code holds a few KB, and an RSA key alone can be
+# close to that, so hosts are greedily grouped into chunks capped at
+# MAX_CHUNK_BYTES. A host whose own JSON already exceeds the cap (a big
+# RSA key) still gets a chunk to itself - it just doesn't share with
+# others. In the common case (a handful of hosts, ed25519/ecdsa keys),
+# everything fits in one chunk, i.e. one QR for the whole batch.
+MAX_CHUNK_BYTES=1800
 
-n=0
+CHUNK_JSON=""
+CHUNK_COUNT=0
+CHUNK_NAMES=""
+QR_JSONS=()
+QR_LABELS=()
+
+flush_chunk() {
+  [ "$CHUNK_COUNT" -gt 0 ] || return 0
+  QR_JSONS+=("{\"termul_sync_batch\":1,\"hosts\":[$CHUNK_JSON]}")
+  QR_LABELS+=("$CHUNK_NAMES")
+  CHUNK_JSON=""
+  CHUNK_COUNT=0
+  CHUNK_NAMES=""
+}
+
 for sel in $SELECTION; do
-  n=$((n + 1))
   idx=$((sel - 1))
   if [ "$idx" -lt 0 ] || [ "$idx" -ge "${#NAMES[@]}" ]; then
     echo "Lewati pilihan tidak valid: $sel" >&2
@@ -147,20 +166,44 @@ for sel in $SELECTION; do
   keyfile="${KEYFILES[$idx]}"
   key_content=$(cat "$keyfile")
 
-  json="{\"termul_sync\":1,\"name\":\"$(json_escape "$name")\",\"address\":\"$(json_escape "$addr")\",\"port\":$port,\"username\":\"$(json_escape "$user")\",\"privateKey\":\"$(json_escape "$key_content")\"}"
+  host_json="{\"name\":\"$(json_escape "$name")\",\"address\":\"$(json_escape "$addr")\",\"port\":$port,\"username\":\"$(json_escape "$user")\",\"privateKey\":\"$(json_escape "$key_content")\"}"
 
+  if [ "$CHUNK_COUNT" -gt 0 ] && [ $((${#CHUNK_JSON} + ${#host_json} + 1)) -gt "$MAX_CHUNK_BYTES" ]; then
+    flush_chunk
+  fi
+
+  if [ "$CHUNK_COUNT" -eq 0 ]; then
+    CHUNK_JSON="$host_json"
+    CHUNK_NAMES="$name"
+  else
+    CHUNK_JSON="$CHUNK_JSON,$host_json"
+    CHUNK_NAMES="$CHUNK_NAMES, $name"
+  fi
+  CHUNK_COUNT=$((CHUNK_COUNT + 1))
+done
+flush_chunk
+
+total="${#QR_JSONS[@]}"
+if [ "$total" -eq 0 ]; then
+  echo "Tidak ada yang dipilih, keluar."
+  exit 0
+fi
+
+n=0
+while [ "$n" -lt "$total" ]; do
   clear
-  echo "Host $n/$total: $name"
+  echo "QR $((n + 1))/$total: ${QR_LABELS[$n]}"
   echo "Scan QR ini di app TerMul (menu Import dari Mac):"
   echo
   # No -r here: qrencode reads stdin by default when given no data argument.
   # "-r -" looks like the usual stdin convention but qrencode takes it
   # literally as a file named "-" and fails with "Cannot read input file -."
-  printf '%s' "$json" | qrencode -t ANSIUTF8 -l L -o -
+  printf '%s' "${QR_JSONS[$n]}" | qrencode -t ANSIUTF8 -l L -o -
   echo
 
+  n=$((n + 1))
   if [ "$n" -lt "$total" ]; then
-    printf "Setelah ke-scan, tekan [Enter] untuk host berikutnya... "
+    printf "Setelah ke-scan, tekan [Enter] untuk QR berikutnya... "
     read -r _
   else
     echo "Itu QR terakhir. Selesai."

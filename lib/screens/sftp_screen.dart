@@ -90,7 +90,7 @@ class _SftpScreenState extends State<SftpScreen> {
   }
 
   Future<void> _upload() async {
-    final result = await FilePicker.platform.pickFiles();
+    final result = await FilePicker.pickFiles();
     final picked = result?.files.single;
     if (picked?.path == null) return;
 
