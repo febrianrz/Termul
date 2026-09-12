@@ -19,8 +19,15 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    id("com.android.application") version "9.1.0" apply false
-    id("org.jetbrains.kotlin.android") version "2.4.0" apply false
+    // Pinned below AGP 9.0: AGP 9+ dropped support for plugins that apply
+    // the Kotlin Gradle Plugin the old (imperative) way, which is how
+    // file_picker, flutter_web_auth_2 and package_info_plus still do it as
+    // of the versions this app depends on - under AGP 9 their native Kotlin
+    // sources silently fail to compile ("cannot find symbol FilePickerPlugin"
+    // etc). Revert to AGP 9+ once those plugins migrate to built-in Kotlin
+    // (https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin).
+    id("com.android.application") version "8.13.0" apply false
+    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
 }
 
 include(":app")
