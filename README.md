@@ -8,6 +8,8 @@ SSH client / terminal multiplexer for Android (Termius-like), built with Flutter
 
 The APK is built automatically by GitHub Actions on every push, so the link above always points to the latest build. Build history is in the [Actions](https://github.com/febrianrz/Termul/actions) tab.
 
+Built for 64-bit ARM (`arm64-v8a`) only, which is virtually every Android device sold since ~2017 - this keeps the APK much smaller than a universal build. If you need 32-bit or x86 support, drop `--target-platform android-arm64` from `build-apk.yml`'s build step (or use `--split-per-abi` to get one small APK per architecture instead of one big one).
+
 ## Features
 
 - Save multiple SSH hosts (name, address, port, username, password or private key)
@@ -34,10 +36,37 @@ See [`backend/README.md`](backend/README.md).
 
 ## CI/CD
 
-- **`build-apk.yml`** — two jobs on every push: `build-android` builds the release APK and publishes it to the `latest` GitHub Release (the download link above); `build-ios` builds an unsigned iOS build to validate it compiles (no installable IPA yet - that needs an Apple Developer account, a signing certificate, and a provisioning profile, none of which are set up). Both need repository secret `ALTER_CLIENT_ID` (the SSO client ID, passed to the app as `--dart-define=SSO_CLIENT_ID`), plus optional repository **variables** `SSO_BASE_URL`, `SSO_REDIRECT_URI` and `BACKEND_BASE_URL` if you're not using this repo's defaults.
+- **`build-apk.yml`** — two jobs on every push: `build-android` builds the release APK and publishes it to the `latest` GitHub Release (the download link above); `build-ios` builds an unsigned iOS build to validate it compiles (no installable IPA yet - that needs an Apple Developer account, a signing certificate, and a provisioning profile, none of which are set up). Both need repository secret `ALTER_CLIENT_ID` (the SSO client ID, passed to the app as `--dart-define=SSO_CLIENT_ID`), plus optional repository **variables** `SSO_BASE_URL`, `SSO_REDIRECT_URI` and `BACKEND_BASE_URL` if you're not using this repo's defaults. `build-android` also accepts the release-signing secrets described below - without them it falls back to the debug key (with a build warning) so the workflow still runs.
 - **`backend-docker.yml`** — builds `backend/`'s Docker image and pushes it whenever `backend/**` changes. Pushes to Docker Hub by default; see `backend/README.md` for pushing to your own registry instead. Needs repository secrets `DOCKER_USERNAME` and `DOCKER_PASSWORD` (a Docker Hub [access token](https://hub.docker.com/settings/security), not your password, if using Docker Hub).
 
 Add secrets/variables under **Settings → Secrets and variables → Actions**.
+
+## Android release signing
+
+The release APK is signed with a real key rather than the Flutter template's
+debug key, and R8 minification + resource shrinking are on (`android/app/build.gradle.kts`)
+— both shrink the APK and make it harder to decompile. `android/key.properties`
+(gitignored) holds the keystore path and passwords locally; in CI, the "Set up
+Android release signing" step in `build-apk.yml` writes it from repository
+secrets before the build.
+
+To set up your own signing key (only needs doing once):
+
+```bash
+keytool -genkeypair -v -storetype PKCS12 \
+  -keystore release-keystore.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Keep `release-keystore.jks` and its passwords somewhere safe outside the repo
+(losing it means you can never publish an update under the same signature).
+Then either:
+
+- **Locally**: put the `.jks` file under `android/` and create
+  `android/key.properties` with `storeFile`, `storePassword`, `keyAlias`,
+  `keyPassword` (see the keytool command above for the alias).
+- **In CI**: add repository secrets `ANDROID_KEYSTORE_BASE64` (the `.jks`
+  file, base64-encoded: `base64 -i release-keystore.jks`),
+  `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`.
 
 ## Forking (bring your own SSO)
 
