@@ -35,6 +35,25 @@ jobs:
             exit 1
           fi
 
+      - name: Set up Android release signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::warning::ANDROID_KEYSTORE_BASE64 is not set - the release APK will be signed with the debug key instead of a dedicated release key. See README's 'Android release signing' section for how to generate and configure one."
+            exit 0
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          {
+            echo "storeFile=$RUNNER_TEMP/release.jks"
+            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+            echo "keyAlias=$ANDROID_KEY_ALIAS"
+            echo "keyPassword=$ANDROID_KEY_PASSWORD"
+          } > android/key.properties
+
       - name: Build release APK
         env:
           SSO_CLIENT_ID: ${{ secrets.ALTER_CLIENT_ID }}
@@ -50,6 +69,10 @@ jobs:
           # pubspec.yaml's fixed version alone can't tell two APKs apart.
           # Stamp the CI run number as the build number, shown in Settings.
           args+=(--build-number="${{ github.run_number }}")
+          # Almost every real Android device sold since ~2017 is arm64; a
+          # universal build bundles armeabi-v7a/x86/x86_64 native code too,
+          # which roughly triples the APK size for a near-zero audience.
+          args+=(--target-platform android-arm64)
           flutter build apk --release "${args[@]}"
 
       - name: Upload APK (build artifact)
