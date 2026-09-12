@@ -2,7 +2,7 @@
   "name": "termul-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "Backend for Termul (auth + cross-device sync) - not wired into the app yet",
+  "description": "Backend for Termul (SSO token exchange + future cross-device sync)",
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
@@ -10,6 +10,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "dotenv": "^16.4.7",
     "express": "^4.21.2"
   },
   "devDependencies": {

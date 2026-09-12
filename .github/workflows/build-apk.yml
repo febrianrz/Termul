@@ -31,11 +31,11 @@ jobs:
       - name: Build release APK
         env:
           ALTER_CLIENT_ID: ${{ secrets.ALTER_CLIENT_ID }}
-          ALTER_CLIENT_SECRET: ${{ secrets.ALTER_CLIENT_SECRET }}
+          BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
         run: |
           flutter build apk --release \
             --dart-define=ALTER_CLIENT_ID="$ALTER_CLIENT_ID" \
-            --dart-define=ALTER_CLIENT_SECRET="$ALTER_CLIENT_SECRET"
+            --dart-define=BACKEND_BASE_URL="${BACKEND_BASE_URL:-http://10.0.2.2:3000}"
 
       - name: Upload APK (build artifact)
         uses: actions/upload-artifact@v4

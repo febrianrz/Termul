@@ -64,17 +64,16 @@ class AuthService {
     await _exchangeCode(code);
   }
 
+  /// Sends the authorization code to our own backend, which holds the
+  /// client_secret and performs the actual `/oauth/token` exchange.
   Future<void> _exchangeCode(String code) async {
     final response = await http.post(
-      Uri.parse('${SsoConfig.baseUrl}/oauth/token'),
-      headers: {'Accept': 'application/json'},
-      body: {
-        'grant_type': 'authorization_code',
-        'client_id': SsoConfig.clientId,
-        'client_secret': SsoConfig.clientSecret,
-        'redirect_uri': SsoConfig.redirectUri,
-        'code': code,
+      Uri.parse('${SsoConfig.backendBaseUrl}/auth/exchange'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
+      body: jsonEncode({'code': code}),
     );
 
     if (response.statusCode != 200) {
@@ -100,14 +99,12 @@ class AuthService {
     if (refreshToken == null) return false;
 
     final response = await http.post(
-      Uri.parse('${SsoConfig.baseUrl}/oauth/token'),
-      headers: {'Accept': 'application/json'},
-      body: {
-        'grant_type': 'refresh_token',
-        'client_id': SsoConfig.clientId,
-        'client_secret': SsoConfig.clientSecret,
-        'refresh_token': refreshToken,
+      Uri.parse('${SsoConfig.backendBaseUrl}/auth/refresh'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
+      body: jsonEncode({'refresh_token': refreshToken}),
     );
 
     if (response.statusCode != 200) return false;

@@ -1,27 +1,42 @@
 # Termul Backend
 
-Skeleton service for Termul's future auth (SSO) and cross-device sync
-(host list, credentials metadata, snippets) between the mobile apps and
-the desktop client. Not wired into the mobile app yet — the app
-currently stores everything locally on-device.
+Brokers the SSO login flow so the OAuth `client_secret` never has to ship
+inside the mobile app: the app gets an authorization `code` from the
+browser redirect and sends it here; this service exchanges it for tokens
+with Alter Indonesia and hands them back over HTTPS. Will also host
+cross-device sync (host list, snippets) in the future.
 
-## Status
+## Endpoints
 
-Just a runnable base right now: Express + TypeScript with a `/health`
-endpoint. Auth and sync endpoints are not implemented — those come once
-the SSO provider(s) and sync storage are decided.
+- `GET /health` — liveness check
+- `POST /auth/exchange` — body `{ "code": "..." }`, returns Alter Indonesia's token response (`access_token`, `refresh_token`, `expires_in`, `token_type`)
+- `POST /auth/refresh` — body `{ "refresh_token": "..." }`, same response shape
 
 ## Run locally
 
 ```bash
+cp .env.example .env   # fill in ALTER_CLIENT_ID / ALTER_CLIENT_SECRET
 npm install
 npm run dev
 ```
 
-## Planned scope (not yet implemented)
+## Run with Docker
 
-- SSO login (OIDC/OAuth2 — provider(s) TBD)
-- Sync API for saved hosts, connection settings, and snippets across
-  Macbook / Android / iOS
-- Secrets (passwords, private keys) stay encrypted client-side; the
-  backend should never see them in plaintext
+```bash
+docker pull <your-dockerhub-username>/termul-backend:latest
+docker run -d -p 3000:3000 --env-file .env <your-dockerhub-username>/termul-backend:latest
+```
+
+The image is built and pushed automatically by `.github/workflows/backend-docker.yml`
+whenever files under `backend/` change (see the repo root README for the
+required CI secrets).
+
+## Environment variables
+
+| Variable | Required | Default |
+| --- | --- | --- |
+| `PORT` | no | `3000` |
+| `ALTER_BASE_URL` | no | `https://one.alterindonesia.com` |
+| `ALTER_CLIENT_ID` | yes | — |
+| `ALTER_CLIENT_SECRET` | yes | — |
+| `ALTER_REDIRECT_URI` | no | `com.febrianrz.termul://callback` |
