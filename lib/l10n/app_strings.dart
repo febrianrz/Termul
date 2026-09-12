@@ -211,4 +211,5 @@ class AppStrings {
     'Run "termul" on Mac/Linux (see agent/README.md), then '
     'scan the QR code it shows - usually one QR is enough for several hosts.',
   );
+  String get scanQr => 'Scan QR';
 }
