@@ -26,8 +26,11 @@ plugins {
     // sources silently fail to compile ("cannot find symbol FilePickerPlugin"
     // etc). Revert to AGP 9+ once those plugins migrate to built-in Kotlin
     // (https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin).
+    // Kotlin is pinned to the current Flutter SDK's floor (2.2.20) rather
+    // than the newest release, since Flutter hard-fails below that - see
+    // `flutter --version` / the flutter-gradle-plugin's own version check.
     id("com.android.application") version "8.13.0" apply false
-    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    id("org.jetbrains.kotlin.android") version "2.2.20" apply false
 }
 
 include(":app")
