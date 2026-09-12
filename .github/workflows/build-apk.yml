@@ -35,6 +35,16 @@ jobs:
           SSO_REDIRECT_URI: ${{ vars.SSO_REDIRECT_URI }}
           BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
         run: |
+          # Without this guard, a missing/empty secret silently bakes an
+          # empty client_id into the APK - the app builds fine, uploads
+          # fine, and only fails at login (as "unsupported_grant_type" or
+          # similar, from the SSO server rejecting the blank client_id)
+          # with nothing in this log pointing at the real cause.
+          if [ -z "$SSO_CLIENT_ID" ]; then
+            echo "::error::SSO_CLIENT_ID secret is empty or not set - the built APK's login would silently send no client_id. Set it in Settings > Secrets and variables > Actions > Secrets."
+            exit 1
+          fi
+
           args=(--dart-define=SSO_CLIENT_ID="$SSO_CLIENT_ID")
           [ -n "$SSO_BASE_URL" ] && args+=(--dart-define=SSO_BASE_URL="$SSO_BASE_URL")
           [ -n "$SSO_REDIRECT_URI" ] && args+=(--dart-define=SSO_REDIRECT_URI="$SSO_REDIRECT_URI")
@@ -88,6 +98,11 @@ jobs:
           SSO_REDIRECT_URI: ${{ vars.SSO_REDIRECT_URI }}
           BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
         run: |
+          if [ -z "$SSO_CLIENT_ID" ]; then
+            echo "::error::SSO_CLIENT_ID secret is empty or not set - the built app's login would silently send no client_id. Set it in Settings > Secrets and variables > Actions > Secrets."
+            exit 1
+          fi
+
           args=(--dart-define=SSO_CLIENT_ID="$SSO_CLIENT_ID")
           [ -n "$SSO_BASE_URL" ] && args+=(--dart-define=SSO_BASE_URL="$SSO_BASE_URL")
           [ -n "$SSO_REDIRECT_URI" ] && args+=(--dart-define=SSO_REDIRECT_URI="$SSO_REDIRECT_URI")
