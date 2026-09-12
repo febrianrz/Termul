@@ -12,6 +12,7 @@ import 'login_screen.dart';
 import 'qr_import_screen.dart';
 import 'session_switcher_screen.dart';
 import 'settings_screen.dart';
+import 'sftp_screen.dart';
 import 'shortcut_screen.dart';
 import 'terminal_screen.dart';
 
@@ -165,10 +166,16 @@ class _HostListScreenState extends State<HostListScreen> {
       ),
       trailing: PopupMenuButton<String>(
         onSelected: (value) {
+          if (value == 'sftp') {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => SftpScreen(host: host)),
+            );
+          }
           if (value == 'edit') _openEditor(host: host);
           if (value == 'delete') _delete(host);
         },
         itemBuilder: (context) => const [
+          PopupMenuItem(value: 'sftp', child: Text('SFTP')),
           PopupMenuItem(value: 'edit', child: Text('Edit')),
           PopupMenuItem(value: 'delete', child: Text('Hapus')),
         ],

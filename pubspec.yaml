@@ -52,6 +52,10 @@ dependencies:
   # Reads the app's own version/build number (from this file's `version:`)
   # at runtime, to show it in Settings.
   package_info_plus: ^9.0.1
+  # SFTP file browser: pick a local file to upload, and locate a folder to
+  # save downloads into.
+  file_picker: ^9.2.3
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
