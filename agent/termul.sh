@@ -153,7 +153,10 @@ for sel in $SELECTION; do
   echo "Host $n/$total: $name"
   echo "Scan QR ini di app TerMul (menu Import dari Mac):"
   echo
-  printf '%s' "$json" | qrencode -t ANSIUTF8 -l L -r - -o -
+  # No -r here: qrencode reads stdin by default when given no data argument.
+  # "-r -" looks like the usual stdin convention but qrencode takes it
+  # literally as a file named "-" and fails with "Cannot read input file -."
+  printf '%s' "$json" | qrencode -t ANSIUTF8 -l L -o -
   echo
 
   if [ "$n" -lt "$total" ]; then
