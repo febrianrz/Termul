@@ -58,13 +58,20 @@ jobs:
           echo "DEBUG namespace=[$namespace] (len ${#namespace})"
           echo "DEBUG name=[$name]"
 
-          # Temporary: dump the raw secret as hex so hidden/invisible characters
-          # (extra whitespace, a duplicated value, a stray newline that survived
-          # tr, etc.) show up even though GitHub masks the plain-text value.
-          # DOCKER_REGISTRY is just a hostname, not a credential, so this is safe
-          # to print. Remove this block once the length/format issue is fixed.
-          echo "DEBUG REGISTRY raw hexdump:"
-          printf '%s' "$REGISTRY" | od -An -c | head -20
+          # Temporary: narrow down what's inflating $registry's length, without
+          # ever printing the secret itself (avoids defeating log masking).
+          # Compares against the known-good hostname structurally instead.
+          clean="dregistry5.alterindonesia.com"
+          prefix_extra="${registry%"$clean"}"
+          suffix_extra="${registry#"$clean"}"
+          occurrences=$(grep -o "alterindonesia" <<< "$registry" | wc -l)
+          echo "DEBUG bytes before expected hostname (if it's a suffix of registry): ${#prefix_extra}"
+          echo "DEBUG bytes after expected hostname (if it's a prefix of registry): ${#suffix_extra}"
+          echo "DEBUG occurrences of 'alterindonesia' substring: $occurrences"
+          case "$registry" in
+            *"$clean"*) echo "DEBUG registry CONTAINS the expected hostname somewhere in it" ;;
+            *) echo "DEBUG registry does NOT contain the expected hostname at all" ;;
+          esac
 
       - name: Log in to registry
         uses: docker/login-action@v3
