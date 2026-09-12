@@ -195,4 +195,20 @@ class AppStrings {
   String get verificationFailed =>
       _t('Verifikasi gagal atau dibatalkan', 'Verification failed or cancelled');
   String get verifying => _t('Memverifikasi…', 'Verifying…');
+
+  // ---------------------------------------------------------------------
+  // QR import
+  // ---------------------------------------------------------------------
+  String hostsImported(int count) =>
+      _t('$count host berhasil diimpor', '$count hosts imported');
+  String importHostsQuestion(int count) =>
+      _t('Impor $count host?', 'Import $count hosts?');
+  String get import => _t('Impor', 'Import');
+  String get done => _t('Selesai', 'Done');
+  String get qrImportInstructions => _t(
+    'Jalankan "termul" di Mac/Linux (lihat agent/README.md), lalu '
+    'scan QR yang muncul - biasanya cukup satu QR untuk beberapa host sekaligus.',
+    'Run "termul" on Mac/Linux (see agent/README.md), then '
+    'scan the QR code it shows - usually one QR is enough for several hosts.',
+  );
 }
