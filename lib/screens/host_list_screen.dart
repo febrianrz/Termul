@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../auth/auth_service.dart';
 import '../data/host_repository.dart';
+import '../l10n/app_strings.dart';
 import '../models/host_group.dart';
 import '../models/ssh_host.dart';
 import '../services/update_checker.dart';
@@ -20,7 +21,7 @@ import 'settings_screen.dart';
 import 'sftp_screen.dart';
 import 'shortcut_screen.dart';
 import 'terminal_tabs_screen.dart';
-import 'web_shortcut_screen.dart';
+import 'web_shortcuts_tab.dart';
 
 class HostListScreen extends StatefulWidget {
   const HostListScreen({super.key});
@@ -29,7 +30,8 @@ class HostListScreen extends StatefulWidget {
   State<HostListScreen> createState() => _HostListScreenState();
 }
 
-class _HostListScreenState extends State<HostListScreen> {
+class _HostListScreenState extends State<HostListScreen>
+    with SingleTickerProviderStateMixin {
   late List<SshHost> _hosts;
   late List<HostGroup> _groups;
   bool _loggedIn = false;
@@ -37,13 +39,22 @@ class _HostListScreenState extends State<HostListScreen> {
   UpdateInfo? _updateInfo;
   String _searchQuery = '';
   String? _selectedTag;
+  final AppStrings _s = AppStrings();
+  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _reload();
     _loadAuthStatus();
     _checkForUpdate();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   /// Best-effort, silent check so the app can flag a newer build without
@@ -123,12 +134,6 @@ class _HostListScreenState extends State<HostListScreen> {
     );
   }
 
-  void _openWebShortcuts() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const WebShortcutScreen()),
-    );
-  }
-
   void _openSettings() {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -153,16 +158,16 @@ class _HostListScreenState extends State<HostListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus host?'),
-        content: Text('Host "${host.name}" akan dihapus.'),
+        title: Text(_s.deleteHostTitle),
+        content: Text(_s.deleteHostBody(host.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
+            child: Text(_s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Hapus'),
+            child: Text(_s.delete),
           ),
         ],
       ),
@@ -184,7 +189,7 @@ class _HostListScreenState extends State<HostListScreen> {
     final name = _userDisplayName() ?? 'Alter One';
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('Berhasil login sebagai $name')));
+    ).showSnackBar(SnackBar(content: Text(_s.loginSuccess(name))));
   }
 
   Future<void> _logout() async {
@@ -192,15 +197,15 @@ class _HostListScreenState extends State<HostListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Logout?'),
+        title: Text(_s.logoutConfirmTitle),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
+            child: Text(_s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Logout'),
+            child: Text(_s.logout),
           ),
         ],
       ),
@@ -219,11 +224,11 @@ class _HostListScreenState extends State<HostListScreen> {
   Widget _updateBanner(UpdateInfo info) {
     return MaterialBanner(
       leading: const Icon(Icons.system_update_outlined),
-      content: Text('Update tersedia (build ${info.buildNumber})'),
+      content: Text(_s.updateAvailable(info.buildNumber)),
       actions: [
         TextButton(
           onPressed: () => setState(() => _updateInfo = null),
-          child: const Text('Nanti'),
+          child: Text(_s.later),
         ),
         FilledButton(
           onPressed: () {
@@ -233,7 +238,7 @@ class _HostListScreenState extends State<HostListScreen> {
               mode: LaunchMode.externalApplication,
             );
           },
-          child: const Text('Buka'),
+          child: Text(_s.open),
         ),
       ],
     );
@@ -293,11 +298,11 @@ class _HostListScreenState extends State<HostListScreen> {
           if (value == 'edit') _openEditor(host: host);
           if (value == 'delete') _delete(host);
         },
-        itemBuilder: (context) => const [
-          PopupMenuItem(value: 'sftp', child: Text('SFTP')),
-          PopupMenuItem(value: 'forward', child: Text('Port Forward')),
-          PopupMenuItem(value: 'edit', child: Text('Edit')),
-          PopupMenuItem(value: 'delete', child: Text('Hapus')),
+        itemBuilder: (context) => [
+          PopupMenuItem(value: 'sftp', child: Text(_s.sftp)),
+          PopupMenuItem(value: 'forward', child: Text(_s.portForward)),
+          PopupMenuItem(value: 'edit', child: Text(_s.edit)),
+          PopupMenuItem(value: 'delete', child: Text(_s.delete)),
         ],
       ),
     );
@@ -321,7 +326,7 @@ class _HostListScreenState extends State<HostListScreen> {
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
           child: TextField(
             decoration: InputDecoration(
-              hintText: 'Cari host, alamat, atau tag…',
+              hintText: _s.searchHint,
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _searchQuery.isEmpty
                   ? null
@@ -368,7 +373,7 @@ class _HostListScreenState extends State<HostListScreen> {
 
     final hosts = _filteredHosts;
     if (hosts.isEmpty) {
-      return const Center(child: Text('Tidak ada host yang cocok'));
+      return Center(child: Text(_s.noMatchingHosts));
     }
 
     if (_groups.isEmpty || _isFiltering) {
@@ -393,7 +398,7 @@ class _HostListScreenState extends State<HostListScreen> {
     }
     final ungrouped = byGroup[null];
     if (ungrouped != null && ungrouped.isNotEmpty) {
-      sections.add(_sectionHeader('Tanpa grup'));
+      sections.add(_sectionHeader(_s.ungrouped));
       sections.addAll(ungrouped.map(_hostTile));
     }
 
@@ -410,11 +415,40 @@ class _HostListScreenState extends State<HostListScreen> {
     );
   }
 
+  Widget _sshTab() {
+    return Stack(
+      children: [
+        Column(
+          children: [
+            if (_updateInfo != null) _updateBanner(_updateInfo!),
+            if (_hosts.isNotEmpty) _searchAndTagBar(),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            onPressed: () => _openEditor(),
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Termul'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(icon: const Icon(Icons.dns_outlined), text: _s.sshTab),
+            Tab(icon: const Icon(Icons.apps_outlined), text: _s.webShortcuts),
+          ],
+        ),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -423,7 +457,6 @@ class _HostListScreenState extends State<HostListScreen> {
               if (value == 'import_qr') _importFromMac();
               if (value == 'groups') _openGroups();
               if (value == 'shortcuts') _openShortcuts();
-              if (value == 'web_shortcuts') _openWebShortcuts();
               if (value == 'settings') _openSettings();
               if (value == 'login') _login();
               if (value == 'logout') _logout();
@@ -439,32 +472,28 @@ class _HostListScreenState extends State<HostListScreen> {
                   child: _menuRow(
                     Icons.terminal,
                     sessionCount > 0
-                        ? 'Sesi Aktif ($sessionCount)'
-                        : 'Sesi Aktif',
+                        ? _s.activeSessionsCount(sessionCount)
+                        : _s.activeSessions,
                   ),
                 ),
                 PopupMenuItem<String>(
                   value: 'import_qr',
                   child: _menuRow(
                     Icons.qr_code_scanner,
-                    'Import dari Komputer',
+                    _s.importFromComputer,
                   ),
                 ),
                 PopupMenuItem<String>(
                   value: 'groups',
-                  child: _menuRow(Icons.folder_outlined, 'Kelola Grup'),
+                  child: _menuRow(Icons.folder_outlined, _s.manageGroups),
                 ),
                 PopupMenuItem<String>(
                   value: 'shortcuts',
-                  child: _menuRow(Icons.bolt_outlined, 'Command Shortcut'),
-                ),
-                PopupMenuItem<String>(
-                  value: 'web_shortcuts',
-                  child: _menuRow(Icons.apps_outlined, 'Web Shortcut'),
+                  child: _menuRow(Icons.bolt_outlined, _s.commandShortcuts),
                 ),
                 PopupMenuItem<String>(
                   value: 'settings',
-                  child: _menuRow(Icons.settings_outlined, 'Pengaturan'),
+                  child: _menuRow(Icons.settings_outlined, _s.settings),
                 ),
                 const PopupMenuDivider(),
                 if (_loggedIn) ...[
@@ -482,7 +511,7 @@ class _HostListScreenState extends State<HostListScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            _userDisplayName() ?? 'Akun',
+                            _userDisplayName() ?? _s.account,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -491,28 +520,21 @@ class _HostListScreenState extends State<HostListScreen> {
                   ),
                   PopupMenuItem<String>(
                     value: 'logout',
-                    child: _menuRow(Icons.logout, 'Logout'),
+                    child: _menuRow(Icons.logout, _s.logout),
                   ),
                 ] else
                   PopupMenuItem<String>(
                     value: 'login',
-                    child: _menuRow(Icons.login, 'Sign In Alter One'),
+                    child: _menuRow(Icons.login, _s.signInAlterOne),
                   ),
               ];
             },
           ),
         ],
       ),
-      body: Column(
-        children: [
-          if (_updateInfo != null) _updateBanner(_updateInfo!),
-          if (_hosts.isNotEmpty) _searchAndTagBar(),
-          Expanded(child: _buildBody()),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openEditor(),
-        child: const Icon(Icons.add),
+      body: TabBarView(
+        controller: _tabController,
+        children: [_sshTab(), const WebShortcutsTab()],
       ),
     );
   }
@@ -570,18 +592,19 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings();
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(Icons.terminal, size: 64, color: Colors.grey),
           const SizedBox(height: 16),
-          const Text('Belum ada host SSH'),
+          Text(s.noHostsYet),
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: onAdd,
             icon: const Icon(Icons.add),
-            label: const Text('Tambah host'),
+            label: Text(s.addHost),
           ),
         ],
       ),

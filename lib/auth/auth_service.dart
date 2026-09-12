@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
 import '../config/sso_config.dart';
+import '../l10n/app_strings.dart';
 
 class AuthException implements Exception {
   final String message;
@@ -30,11 +31,7 @@ class AuthService {
 
   Future<void> login() async {
     if (SsoConfig.clientId.isEmpty) {
-      throw AuthException(
-        'SSO belum dikonfigurasi: SSO_CLIENT_ID kosong. '
-        'Build ulang dengan --dart-define=SSO_CLIENT_ID=... '
-        '(lihat README bagian "Forking").',
-      );
+      throw AuthException(AppStrings().ssoNotConfigured);
     }
 
     final state = const Uuid().v4();
@@ -55,7 +52,7 @@ class AuthService {
         callbackUrlScheme: SsoConfig.callbackUrlScheme,
       );
     } catch (_) {
-      throw AuthException('Login dibatalkan');
+      throw AuthException(AppStrings().loginCancelled);
     }
 
     final callbackUri = Uri.parse(result);
@@ -63,10 +60,10 @@ class AuthService {
     final returnedState = callbackUri.queryParameters['state'];
 
     if (code == null) {
-      throw AuthException('Login gagal: kode otorisasi tidak diterima');
+      throw AuthException(AppStrings().loginFailedNoCode);
     }
     if (returnedState != state) {
-      throw AuthException('Login gagal: state tidak cocok');
+      throw AuthException(AppStrings().loginFailedStateMismatch);
     }
 
     await _exchangeCode(code);
@@ -85,7 +82,7 @@ class AuthService {
     );
 
     if (response.statusCode != 200) {
-      throw AuthException('Gagal menukar kode login (${response.statusCode})');
+      throw AuthException(AppStrings().loginExchangeFailed(response.statusCode));
     }
 
     await _storeTokens(jsonDecode(response.body) as Map<String, dynamic>);

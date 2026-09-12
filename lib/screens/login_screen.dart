@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../auth/auth_service.dart';
+import '../l10n/app_strings.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,6 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings();
     return Scaffold(
       appBar: AppBar(),
       body: Center(
@@ -49,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              const Text('Login opsional — buat sync antar device nanti'),
+              Text(s.loginOptionalSubtitle),
               const SizedBox(height: 32),
               if (_error != null) ...[
                 Text(
@@ -68,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.login),
-                label: const Text('Login with Alter One'),
+                label: Text(s.loginWithAlterOne),
               ),
             ],
           ),

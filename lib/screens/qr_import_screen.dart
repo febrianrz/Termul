@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/host_repository.dart';
+import '../l10n/app_strings.dart';
 import '../models/ssh_host.dart';
 import 'host_edit_screen.dart';
 
@@ -34,6 +35,7 @@ class QrImportScreen extends StatefulWidget {
 }
 
 class _QrImportScreenState extends State<QrImportScreen> {
+  final AppStrings _s = AppStrings();
   bool _busy = false;
 
   SshHost _hostFrom(Map<String, dynamic> data) => SshHost(
@@ -89,7 +91,7 @@ class _QrImportScreenState extends State<QrImportScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${scanned.length} host berhasil diimpor')),
+          SnackBar(content: Text(_s.hostsImported(scanned.length))),
         );
       }
     }
@@ -100,7 +102,7 @@ class _QrImportScreenState extends State<QrImportScreen> {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Impor ${scanned.length} host?'),
+        title: Text(_s.importHostsQuestion(scanned.length)),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView(
@@ -122,11 +124,11 @@ class _QrImportScreenState extends State<QrImportScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
+            child: Text(_s.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Impor'),
+            child: Text(_s.import),
           ),
         ],
       ),
@@ -155,11 +157,11 @@ class _QrImportScreenState extends State<QrImportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Import dari Komputer'),
+        title: Text(_s.importFromComputer),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Selesai'),
+            child: Text(_s.done),
           ),
         ],
       ),
@@ -169,9 +171,8 @@ class _QrImportScreenState extends State<QrImportScreen> {
             width: double.infinity,
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             padding: const EdgeInsets.all(12),
-            child: const Text(
-              'Jalankan "termul" di Mac/Linux (lihat agent/README.md), lalu '
-              'scan QR yang muncul - biasanya cukup satu QR untuk beberapa host sekaligus.',
+            child: Text(
+              _s.qrImportInstructions,
               textAlign: TextAlign.center,
             ),
           ),

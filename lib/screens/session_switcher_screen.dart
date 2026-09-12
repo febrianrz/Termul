@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_strings.dart';
 import '../session/session_manager.dart';
 import '../session/terminal_session.dart';
 import 'broadcast_screen.dart';
@@ -15,15 +16,16 @@ class SessionSwitcherScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sessions = context.watch<SessionManager>().sessions;
+    final s = AppStrings();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sesi Aktif'),
+        title: Text(s.activeSessions),
         actions: [
           if (sessions.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.campaign_outlined),
-              tooltip: 'Broadcast Command',
+              tooltip: s.broadcastCommand,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const BroadcastScreen()),
               ),
@@ -31,7 +33,7 @@ class SessionSwitcherScreen extends StatelessWidget {
         ],
       ),
       body: sessions.isEmpty
-          ? const Center(child: Text('Belum ada sesi terminal yang aktif'))
+          ? Center(child: Text(s.noActiveSessions))
           : ListView.separated(
               itemCount: sessions.length,
               separatorBuilder: (context, index) => const Divider(height: 1),
@@ -61,23 +63,24 @@ class _SessionTile extends StatelessWidget {
     }
   }
 
-  String _label() {
+  String _label(AppStrings s) {
     switch (session.state) {
       case TerminalConnectionState.connecting:
-        return 'Menyambungkan…';
+        return s.connecting;
       case TerminalConnectionState.reconnecting:
-        return 'Menyambungkan ulang…';
+        return s.reconnectingLabel;
       case TerminalConnectionState.connected:
-        return 'Terhubung';
+        return s.connected;
       case TerminalConnectionState.closed:
-        return 'Terputus';
+        return s.disconnected;
       case TerminalConnectionState.failed:
-        return 'Gagal: ${session.errorMessage ?? 'unknown error'}';
+        return s.failedLabel(session.errorMessage ?? s.unknownError);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings();
     return AnimatedBuilder(
       animation: session,
       builder: (context, _) {
@@ -88,7 +91,7 @@ class _SessionTile extends StatelessWidget {
           ),
           title: Text(session.host.name),
           subtitle: Text(
-            _label(),
+            _label(s),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -99,7 +102,7 @@ class _SessionTile extends StatelessWidget {
           ),
           trailing: IconButton(
             icon: const Icon(Icons.close),
-            tooltip: 'Tutup sesi',
+            tooltip: s.closeSession,
             onPressed: () =>
                 context.read<SessionManager>().closeSession(session.host.id),
           ),

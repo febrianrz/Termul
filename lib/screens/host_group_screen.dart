@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/host_repository.dart';
+import '../l10n/app_strings.dart';
 import '../models/host_group.dart';
 
 /// Manage SSH host groups: add, rename, delete. Deleting a group just
@@ -15,6 +16,7 @@ class HostGroupScreen extends StatefulWidget {
 }
 
 class _HostGroupScreenState extends State<HostGroupScreen> {
+  final AppStrings _s = AppStrings();
   late List<HostGroup> _groups;
 
   @override
@@ -35,20 +37,20 @@ class _HostGroupScreenState extends State<HostGroupScreen> {
     final name = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(group == null ? 'Tambah Grup' : 'Rename Grup'),
+        title: Text(group == null ? _s.addGroup : _s.renameGroup),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Nama grup'),
+          decoration: InputDecoration(labelText: _s.groupName),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Batal'),
+            child: Text(_s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('Simpan'),
+            child: Text(_s.save),
           ),
         ],
       ),
@@ -67,19 +69,16 @@ class _HostGroupScreenState extends State<HostGroupScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus grup?'),
-        content: Text(
-          'Grup "${group.name}" akan dihapus. Host di dalamnya tidak ikut '
-          'terhapus, hanya jadi tanpa grup.',
-        ),
+        title: Text(_s.deleteGroupTitle),
+        content: Text(_s.deleteGroupBody(group.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
+            child: Text(_s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Hapus'),
+            child: Text(_s.delete),
           ),
         ],
       ),
@@ -93,9 +92,9 @@ class _HostGroupScreenState extends State<HostGroupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Grup SSH')),
+      appBar: AppBar(title: Text(_s.sshGroups)),
       body: _groups.isEmpty
-          ? const Center(child: Text('Belum ada grup'))
+          ? Center(child: Text(_s.noGroupsYet))
           : ListView.separated(
               itemCount: _groups.length,
               separatorBuilder: (context, index) => const Divider(height: 1),
@@ -109,9 +108,9 @@ class _HostGroupScreenState extends State<HostGroupScreen> {
                       if (value == 'rename') _addOrRename(group: group);
                       if (value == 'delete') _delete(group);
                     },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(value: 'rename', child: Text('Rename')),
-                      PopupMenuItem(value: 'delete', child: Text('Hapus')),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(value: 'rename', child: Text(_s.rename)),
+                      PopupMenuItem(value: 'delete', child: Text(_s.delete)),
                     ],
                   ),
                 );
@@ -119,7 +118,7 @@ class _HostGroupScreenState extends State<HostGroupScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addOrRename(),
-        tooltip: 'Tambah grup',
+        tooltip: _s.addGroupTooltip,
         child: const Icon(Icons.add),
       ),
     );

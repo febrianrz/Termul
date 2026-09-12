@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../auth/app_lock_controller.dart';
+import '../l10n/app_strings.dart';
 import '../services/update_checker.dart';
 import '../theme/theme_controller.dart';
 import '../theme/theme_preset.dart';
@@ -15,12 +16,13 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = context.watch<ThemeController>();
     final lock = context.watch<AppLockController>();
+    final s = AppStrings();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pengaturan')),
+      appBar: AppBar(title: Text(s.settingsTitle)),
       body: ListView(
         children: [
-          const _SectionHeader('Tema'),
+          _SectionHeader(s.theme),
           for (final preset in ThemePreset.values)
             RadioListTile<ThemePresetId>(
               value: preset.id,
@@ -30,19 +32,16 @@ class SettingsScreen extends StatelessWidget {
               secondary: _ThemeSwatch(preset: preset),
             ),
           const Divider(height: 32),
-          const _SectionHeader('Keamanan'),
+          _SectionHeader(s.security),
           SwitchListTile(
             secondary: const Icon(Icons.fingerprint),
-            title: const Text('Kunci dengan biometrik'),
-            subtitle: const Text(
-              'Minta sidik jari/PIN perangkat setiap kali membuka Termul, '
-              'atau setelah 10 menit tidak disentuh',
-            ),
+            title: Text(s.lockWithBiometrics),
+            subtitle: Text(s.lockWithBiometricsSubtitle),
             value: lock.enabled,
             onChanged: (value) => lock.setEnabled(value),
           ),
           const Divider(height: 32),
-          const _SectionHeader('Tentang'),
+          _SectionHeader(s.about),
           const _AppVersionTile(),
           const _UpdateCheckTile(),
         ],
@@ -113,13 +112,14 @@ class _AppVersionTile extends StatelessWidget {
       future: PackageInfo.fromPlatform(),
       builder: (context, snapshot) {
         final info = snapshot.data;
+        final s = AppStrings();
         return ListTile(
           leading: const Icon(Icons.info_outline),
           title: const Text('Termul'),
           subtitle: Text(
             info == null
-                ? 'Memuat versi...'
-                : 'Versi ${info.version} (${info.buildNumber})',
+                ? s.loadingVersion
+                : s.versionLabel(info.version, info.buildNumber),
           ),
         );
       },
@@ -138,6 +138,7 @@ class _UpdateCheckTile extends StatefulWidget {
 }
 
 class _UpdateCheckTileState extends State<_UpdateCheckTile> {
+  final AppStrings _s = AppStrings();
   bool _checking = false;
 
   Future<void> _check() async {
@@ -149,11 +150,11 @@ class _UpdateCheckTileState extends State<_UpdateCheckTile> {
 
       if (!mounted) return;
       if (latest == null) {
-        _showMessage('Tidak bisa mengecek pembaruan. Coba lagi nanti.');
+        _showMessage(_s.updateCheckFailed);
       } else if (latest.buildNumber > currentBuild) {
         _showUpdateDialog(latest);
       } else {
-        _showMessage('Sudah versi terbaru (build $currentBuild).');
+        _showMessage(_s.upToDate(currentBuild));
       }
     } finally {
       if (mounted) setState(() => _checking = false);
@@ -170,12 +171,12 @@ class _UpdateCheckTileState extends State<_UpdateCheckTile> {
     return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Update tersedia'),
-        content: Text('Build ${info.buildNumber} sudah tersedia di GitHub.'),
+        title: Text(_s.updateAvailableTitle),
+        content: Text(_s.updateAvailableBody(info.buildNumber)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Nanti'),
+            child: Text(_s.later),
           ),
           FilledButton(
             onPressed: () {
@@ -185,7 +186,7 @@ class _UpdateCheckTileState extends State<_UpdateCheckTile> {
                 mode: LaunchMode.externalApplication,
               );
             },
-            child: const Text('Buka'),
+            child: Text(_s.open),
           ),
         ],
       ),
@@ -196,7 +197,7 @@ class _UpdateCheckTileState extends State<_UpdateCheckTile> {
   Widget build(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.system_update_outlined),
-      title: const Text('Cek Pembaruan'),
+      title: Text(_s.checkForUpdates),
       trailing: _checking
           ? const SizedBox(
               width: 20,

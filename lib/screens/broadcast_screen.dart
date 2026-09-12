@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_strings.dart';
 import '../models/command_shortcut.dart';
 import '../session/session_manager.dart';
 import '../session/terminal_session.dart';
@@ -17,6 +18,7 @@ class BroadcastScreen extends StatefulWidget {
 }
 
 class _BroadcastScreenState extends State<BroadcastScreen> {
+  final AppStrings _s = AppStrings();
   final _commandController = TextEditingController();
   final Set<String> _selectedHostIds = {};
 
@@ -63,7 +65,7 @@ class _BroadcastScreenState extends State<BroadcastScreen> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Terkirim ke $sent sesi')),
+      SnackBar(content: Text(_s.sentToSessions(sent))),
     );
   }
 
@@ -72,9 +74,9 @@ class _BroadcastScreenState extends State<BroadcastScreen> {
     final sessions = context.watch<SessionManager>().sessions;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Broadcast Command')),
+      appBar: AppBar(title: Text(_s.broadcastCommand)),
       body: sessions.isEmpty
-          ? const Center(child: Text('Belum ada sesi terminal yang aktif'))
+          ? Center(child: Text(_s.noActiveSessions))
           : Column(
               children: [
                 Padding(
@@ -82,11 +84,11 @@ class _BroadcastScreenState extends State<BroadcastScreen> {
                   child: TextField(
                     controller: _commandController,
                     decoration: InputDecoration(
-                      labelText: 'Command',
-                      hintText: 'contoh: docker ps',
+                      labelText: _s.commandLabel,
+                      hintText: _s.commandHint,
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.bolt_outlined),
-                        tooltip: 'Pilih dari shortcut',
+                        tooltip: _s.pickFromShortcuts,
                         onPressed: _pickShortcut,
                       ),
                     ),
@@ -95,11 +97,11 @@ class _BroadcastScreenState extends State<BroadcastScreen> {
                     maxLines: 3,
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Kirim ke sesi mana saja:'),
+                    child: Text(_s.sendToWhichSessions),
                   ),
                 ),
                 Expanded(
@@ -122,7 +124,7 @@ class _BroadcastScreenState extends State<BroadcastScreen> {
                             : null,
                         title: Text(session.host.name),
                         subtitle: Text(
-                          connected ? 'Terhubung' : 'Tidak terhubung',
+                          connected ? _s.connected : _s.notConnected,
                         ),
                       );
                     },
@@ -138,7 +140,9 @@ class _BroadcastScreenState extends State<BroadcastScreen> {
                           ? null
                           : () => _send(sessions),
                       icon: const Icon(Icons.send),
-                      label: Text('Kirim ke ${_selectedHostIds.length} sesi'),
+                      label: Text(
+                        _s.sendToSessionsButton(_selectedHostIds.length),
+                      ),
                     ),
                   ),
                 ),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/host_repository.dart';
+import '../l10n/app_strings.dart';
 import '../models/command_shortcut.dart';
 
 /// Manage saved command shortcuts: add, edit, delete. Used both for
@@ -20,6 +21,7 @@ class ShortcutScreen extends StatefulWidget {
 }
 
 class _ShortcutScreenState extends State<ShortcutScreen> {
+  final AppStrings _s = AppStrings();
   late List<CommandShortcut> _shortcuts;
 
   @override
@@ -42,21 +44,21 @@ class _ShortcutScreenState extends State<ShortcutScreen> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(shortcut == null ? 'Tambah Shortcut' : 'Edit Shortcut'),
+        title: Text(shortcut == null ? _s.addShortcut : _s.editShortcut),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
               autofocus: true,
-              decoration: const InputDecoration(labelText: 'Nama'),
+              decoration: InputDecoration(labelText: _s.shortcutName),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: commandController,
-              decoration: const InputDecoration(
-                labelText: 'Command',
-                hintText: 'contoh: docker ps',
+              decoration: InputDecoration(
+                labelText: _s.commandLabel,
+                hintText: _s.commandHint,
               ),
               style: const TextStyle(fontFamily: 'monospace'),
               maxLines: 3,
@@ -67,11 +69,11 @@ class _ShortcutScreenState extends State<ShortcutScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
+            child: Text(_s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Simpan'),
+            child: Text(_s.save),
           ),
         ],
       ),
@@ -97,16 +99,16 @@ class _ShortcutScreenState extends State<ShortcutScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus shortcut?'),
-        content: Text('Shortcut "${shortcut.name}" akan dihapus.'),
+        title: Text(_s.deleteShortcutTitle),
+        content: Text(_s.deleteShortcutBody(shortcut.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
+            child: Text(_s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Hapus'),
+            child: Text(_s.delete),
           ),
         ],
       ),
@@ -122,11 +124,11 @@ class _ShortcutScreenState extends State<ShortcutScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.pickerMode ? 'Jalankan Shortcut' : 'Command Shortcut',
+          widget.pickerMode ? _s.runShortcut : _s.commandShortcuts,
         ),
       ),
       body: _shortcuts.isEmpty
-          ? const Center(child: Text('Belum ada shortcut'))
+          ? Center(child: Text(_s.noCommandShortcutsYet))
           : ListView.separated(
               itemCount: _shortcuts.length,
               separatorBuilder: (context, index) => const Divider(height: 1),
@@ -151,9 +153,12 @@ class _ShortcutScreenState extends State<ShortcutScreen> {
                             if (value == 'edit') _addOrEdit(shortcut: shortcut);
                             if (value == 'delete') _delete(shortcut);
                           },
-                          itemBuilder: (context) => const [
-                            PopupMenuItem(value: 'edit', child: Text('Edit')),
-                            PopupMenuItem(value: 'delete', child: Text('Hapus')),
+                          itemBuilder: (context) => [
+                            PopupMenuItem(value: 'edit', child: Text(_s.edit)),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text(_s.delete),
+                            ),
                           ],
                         ),
                 );
@@ -161,7 +166,7 @@ class _ShortcutScreenState extends State<ShortcutScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addOrEdit(),
-        tooltip: 'Tambah shortcut',
+        tooltip: _s.addShortcutTooltip,
         child: const Icon(Icons.add),
       ),
     );

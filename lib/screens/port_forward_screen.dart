@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/host_repository.dart';
+import '../l10n/app_strings.dart';
 import '../models/port_forward.dart';
 import '../models/ssh_host.dart';
 import '../session/session_manager.dart';
@@ -22,6 +23,7 @@ class PortForwardScreen extends StatefulWidget {
 }
 
 class _PortForwardScreenState extends State<PortForwardScreen> {
+  final AppStrings _s = AppStrings();
   late final TerminalSession _session;
   late List<PortForward> _forwards;
 
@@ -68,16 +70,16 @@ class _PortForwardScreenState extends State<PortForwardScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus tunnel?'),
-        content: Text('Tunnel "${forward.name}" akan dihapus.'),
+        title: Text(_s.deleteTunnelTitle),
+        content: Text(_s.deleteTunnelBody(forward.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
+            child: Text(_s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Hapus'),
+            child: Text(_s.delete),
           ),
         ],
       ),
@@ -90,7 +92,7 @@ class _PortForwardScreenState extends State<PortForwardScreen> {
 
   String _subtitle(PortForward forward) {
     final arrow = forward.type == PortForwardType.local ? '→' : '←';
-    final label = forward.type == PortForwardType.local ? 'Local' : 'Remote';
+    final label = forward.type == PortForwardType.local ? _s.local : _s.remote;
     return '$label · ${forward.bindPort} $arrow ${forward.targetHost}:${forward.targetPort}';
   }
 
@@ -101,7 +103,7 @@ class _PortForwardScreenState extends State<PortForwardScreen> {
       builder: (context, _) {
         final connected = _session.state == TerminalConnectionState.connected;
         return Scaffold(
-          appBar: AppBar(title: Text('Port Forward · ${widget.host.name}')),
+          appBar: AppBar(title: Text(_s.portForwardTitle(widget.host.name))),
           body: Column(
             children: [
               if (!connected)
@@ -112,14 +114,14 @@ class _PortForwardScreenState extends State<PortForwardScreen> {
                     horizontal: 12,
                     vertical: 8,
                   ),
-                  child: const Text(
-                    'Sesi belum terhubung - tunnel akan aktif begitu tersambung',
-                    style: TextStyle(color: Colors.white),
+                  child: Text(
+                    _s.sessionNotConnectedNotice,
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
               Expanded(
                 child: _forwards.isEmpty
-                    ? const Center(child: Text('Belum ada tunnel'))
+                    ? Center(child: Text(_s.noTunnelsYet))
                     : ListView.separated(
                         itemCount: _forwards.length,
                         separatorBuilder: (context, index) =>
@@ -161,14 +163,14 @@ class _PortForwardScreenState extends State<PortForwardScreen> {
                                     }
                                     if (value == 'delete') _delete(forward);
                                   },
-                                  itemBuilder: (context) => const [
+                                  itemBuilder: (context) => [
                                     PopupMenuItem(
                                       value: 'edit',
-                                      child: Text('Edit'),
+                                      child: Text(_s.edit),
                                     ),
                                     PopupMenuItem(
                                       value: 'delete',
-                                      child: Text('Hapus'),
+                                      child: Text(_s.delete),
                                     ),
                                   ],
                                 ),
@@ -182,7 +184,7 @@ class _PortForwardScreenState extends State<PortForwardScreen> {
           ),
           floatingActionButton: FloatingActionButton(
             onPressed: () => _addOrEdit(),
-            tooltip: 'Tambah tunnel',
+            tooltip: _s.addTunnelTooltip,
             child: const Icon(Icons.add),
           ),
         );
@@ -202,6 +204,7 @@ class _PortForwardDialog extends StatefulWidget {
 }
 
 class _PortForwardDialogState extends State<_PortForwardDialog> {
+  final AppStrings _s = AppStrings();
   final _formKey = GlobalKey<FormState>();
   late final _nameController = TextEditingController(
     text: widget.forward?.name,
@@ -228,7 +231,7 @@ class _PortForwardDialogState extends State<_PortForwardDialog> {
 
   String? _validatePort(String? v) {
     final port = int.tryParse(v?.trim() ?? '');
-    if (port == null || port <= 0 || port > 65535) return 'Port tidak valid';
+    if (port == null || port <= 0 || port > 65535) return _s.invalidPort;
     return null;
   }
 
@@ -250,7 +253,7 @@ class _PortForwardDialogState extends State<_PortForwardDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.forward == null ? 'Tunnel Baru' : 'Edit Tunnel'),
+      title: Text(widget.forward == null ? _s.newTunnel : _s.editTunnel),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -260,22 +263,22 @@ class _PortForwardDialogState extends State<_PortForwardDialog> {
               TextFormField(
                 controller: _nameController,
                 autofocus: true,
-                decoration: const InputDecoration(labelText: 'Nama'),
+                decoration: InputDecoration(labelText: _s.shortcutName),
                 validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                    (v == null || v.trim().isEmpty) ? _s.requiredField : null,
               ),
               const SizedBox(height: 12),
               SegmentedButton<PortForwardType>(
-                segments: const [
+                segments: [
                   ButtonSegment(
                     value: PortForwardType.local,
-                    label: Text('Local'),
-                    icon: Icon(Icons.call_made),
+                    label: Text(_s.local),
+                    icon: const Icon(Icons.call_made),
                   ),
                   ButtonSegment(
                     value: PortForwardType.remote,
-                    label: Text('Remote'),
-                    icon: Icon(Icons.call_received),
+                    label: Text(_s.remote),
+                    icon: const Icon(Icons.call_received),
                   ),
                 ],
                 selected: {_type},
@@ -286,8 +289,8 @@ class _PortForwardDialogState extends State<_PortForwardDialog> {
                 controller: _bindPortController,
                 decoration: InputDecoration(
                   labelText: _type == PortForwardType.local
-                      ? 'Port lokal (di HP)'
-                      : 'Port di server remote',
+                      ? _s.localPortHint
+                      : _s.remotePortHint,
                 ),
                 keyboardType: TextInputType.number,
                 validator: _validatePort,
@@ -295,17 +298,17 @@ class _PortForwardDialogState extends State<_PortForwardDialog> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _targetHostController,
-                decoration: const InputDecoration(
-                  labelText: 'Target host',
-                  hintText: 'contoh: localhost atau 10.0.0.5',
+                decoration: InputDecoration(
+                  labelText: _s.targetHost,
+                  hintText: _s.targetHostHint,
                 ),
                 validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                    (v == null || v.trim().isEmpty) ? _s.requiredField : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _targetPortController,
-                decoration: const InputDecoration(labelText: 'Target port'),
+                decoration: InputDecoration(labelText: _s.targetPort),
                 keyboardType: TextInputType.number,
                 validator: _validatePort,
               ),
@@ -316,9 +319,9 @@ class _PortForwardDialogState extends State<_PortForwardDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Batal'),
+          child: Text(_s.cancel),
         ),
-        FilledButton(onPressed: _save, child: const Text('Simpan')),
+        FilledButton(onPressed: _save, child: Text(_s.save)),
       ],
     );
   }
