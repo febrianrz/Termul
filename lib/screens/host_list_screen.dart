@@ -8,6 +8,7 @@ import '../models/ssh_host.dart';
 import 'host_edit_screen.dart';
 import 'host_group_screen.dart';
 import 'login_screen.dart';
+import 'qr_import_screen.dart';
 import 'terminal_screen.dart';
 
 class HostListScreen extends StatefulWidget {
@@ -52,6 +53,13 @@ class _HostListScreenState extends State<HostListScreen> {
   Future<void> _openGroups() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const HostGroupScreen()),
+    );
+    _reload();
+  }
+
+  Future<void> _importFromMac() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const QrImportScreen()),
     );
     _reload();
   }
@@ -186,6 +194,11 @@ class _HostListScreenState extends State<HostListScreen> {
       appBar: AppBar(
         title: const Text('Termul'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            tooltip: 'Import dari Mac',
+            onPressed: _importFromMac,
+          ),
           IconButton(
             icon: const Icon(Icons.folder_outlined),
             tooltip: 'Kelola Grup',

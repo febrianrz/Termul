@@ -10,7 +10,17 @@ import 'qr_scan_screen.dart';
 class HostEditScreen extends StatefulWidget {
   final SshHost? host;
 
-  const HostEditScreen({super.key, this.host});
+  /// Metadata to pre-fill when adding a new host (e.g. from a QR import),
+  /// as opposed to [host], which puts the form in "edit" mode.
+  final SshHost? prefill;
+  final String? prefillPrivateKey;
+
+  const HostEditScreen({
+    super.key,
+    this.host,
+    this.prefill,
+    this.prefillPrivateKey,
+  });
 
   @override
   State<HostEditScreen> createState() => _HostEditScreenState();
@@ -19,21 +29,27 @@ class HostEditScreen extends StatefulWidget {
 class _HostEditScreenState extends State<HostEditScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  late final _nameController = TextEditingController(text: widget.host?.name);
+  late final _nameController = TextEditingController(
+    text: widget.host?.name ?? widget.prefill?.name,
+  );
   late final _addressController = TextEditingController(
-    text: widget.host?.address,
+    text: widget.host?.address ?? widget.prefill?.address,
   );
   late final _portController = TextEditingController(
-    text: (widget.host?.port ?? 22).toString(),
+    text: (widget.host?.port ?? widget.prefill?.port ?? 22).toString(),
   );
   late final _usernameController = TextEditingController(
-    text: widget.host?.username,
+    text: widget.host?.username ?? widget.prefill?.username,
   );
   final _passwordController = TextEditingController();
-  final _privateKeyController = TextEditingController();
+  late final _privateKeyController = TextEditingController(
+    text: widget.prefillPrivateKey,
+  );
   final _passphraseController = TextEditingController();
 
-  late SshAuthType _authType = widget.host?.authType ?? SshAuthType.password;
+  late SshAuthType _authType =
+      widget.host?.authType ??
+      (widget.prefill != null ? SshAuthType.privateKey : SshAuthType.password);
   late String? _groupId = widget.host?.groupId;
   late List<HostGroup> _groups;
   bool _saving = false;
