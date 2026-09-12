@@ -82,3 +82,12 @@ jobs:
           tags: |
             ${{ steps.image.outputs.name }}:latest
             ${{ steps.image.outputs.name }}:${{ github.sha }}
+
+      # Only runs once the new image has actually been pushed. The webhook
+      # URL itself (including its token) is a secret - it must never be
+      # hardcoded here, since anyone with it can trigger a deploy.
+      - name: Trigger Dokploy deploy
+        if: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK != '' }}
+        env:
+          DOKPLOY_DEPLOY_WEBHOOK: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK }}
+        run: curl -fsS -X POST "$DOKPLOY_DEPLOY_WEBHOOK"

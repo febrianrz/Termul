@@ -93,6 +93,13 @@ Redeploying a new version is just steps 3 again once `backend-docker.yml`
 has pushed an updated `:latest` image (`docker compose pull && docker
 compose up -d`, or the equivalent `docker pull` + `docker run`).
 
+To do that automatically, set `DOKPLOY_DEPLOY_WEBHOOK` as a **secret** in
+**Settings → Secrets and variables → Actions** to your Dokploy app's
+deploy webhook URL (Dokploy → your app → Deployments → Webhook). Once set,
+`backend-docker.yml` calls it right after a successful push, so Dokploy
+pulls the fresh image with no manual step. Leave it unset to skip this —
+the step is a no-op without it.
+
 ### Deploying via a PaaS (Dokploy, Coolify, etc.)
 
 These tools build directly from the git repo instead of pulling a
