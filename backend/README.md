@@ -28,13 +28,27 @@ npm run dev
 ## Run with Docker
 
 ```bash
-docker pull <your-dockerhub-username>/termul-backend:latest
-docker run -d -p 3000:3000 --env-file .env <your-dockerhub-username>/termul-backend:latest
+docker pull <your-image>   # e.g. <dockerhub-username>/termul-backend:latest,
+                            # or <registry-host>/<username>/termul-backend:latest
+docker run -d -p 3000:3000 --env-file .env <your-image>
 ```
 
 The image is built and pushed automatically by `.github/workflows/backend-docker.yml`
-whenever files under `backend/` change (see the repo root README for the
-required CI secrets).
+whenever files under `backend/` change, to Docker Hub by default. To push
+to your own registry instead (self-hosted, GHCR, etc.), set these in
+**Settings → Secrets and variables → Actions**:
+
+| Name | Type | Value |
+| --- | --- | --- |
+| `DOCKER_REGISTRY` | variable | your registry's host, e.g. `registry.example.com` (leave unset for Docker Hub) |
+| `DOCKER_USERNAME` | secret | your registry username |
+| `DOCKER_PASSWORD` | secret | your registry password or access token |
+
+The pushed image is then `<DOCKER_REGISTRY>/<DOCKER_USERNAME>/termul-backend`
+(or just `<DOCKER_USERNAME>/termul-backend` on Docker Hub, no `DOCKER_REGISTRY`
+needed there). Your registry must be reachable over the public internet —
+GitHub's hosted runners can't reach a registry that's only on your local
+network or VPN.
 
 ## Deploying
 
@@ -48,13 +62,13 @@ forwarding, etc.). Any provider works the same way:
    `SSO_REDIRECT_URI` if you're not using this repo's defaults).
 3. **Pull and run** — either directly:
    ```bash
-   docker pull <your-dockerhub-username>/termul-backend:latest
+   docker pull <your-image>
    docker run -d --name termul-backend --restart unless-stopped \
-     -p 3000:3000 --env-file .env <your-dockerhub-username>/termul-backend:latest
+     -p 3000:3000 --env-file .env <your-image>
    ```
    or with the included `docker-compose.yml` (copy it to the server too):
    ```bash
-   DOCKERHUB_USERNAME=<your-dockerhub-username> docker compose up -d
+   DOCKER_IMAGE=<your-image> docker compose up -d
    ```
 4. **Put HTTPS in front of it.** Android blocks plain HTTP for apps by
    default, so the app's `BACKEND_BASE_URL` needs to be `https://` once

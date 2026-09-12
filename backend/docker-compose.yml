@@ -1,6 +1,8 @@
 services:
   backend:
-    image: ${DOCKERHUB_USERNAME}/termul-backend:latest
+    # Docker Hub: <username>/termul-backend:latest
+    # Custom registry: <registry-host>/<username>/termul-backend:latest
+    image: ${DOCKER_IMAGE}
     restart: unless-stopped
     env_file: .env
     ports:

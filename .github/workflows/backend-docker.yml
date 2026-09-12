@@ -18,11 +18,27 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
+      # DOCKER_REGISTRY is a repo *variable* (Settings -> Actions -> Variables).
+      # Leave it unset to push to Docker Hub; set it to your own registry's
+      # host (e.g. registry.example.com) to push there instead.
+      - name: Log in to registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ vars.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Compute image name
+        id: image
+        env:
+          REGISTRY: ${{ vars.DOCKER_REGISTRY }}
+          USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        run: |
+          if [ -n "$REGISTRY" ]; then
+            echo "name=$REGISTRY/$USERNAME/termul-backend" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=$USERNAME/termul-backend" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -30,5 +46,5 @@ jobs:
           context: backend
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/termul-backend:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/termul-backend:${{ github.sha }}
+            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.name }}:${{ github.sha }}

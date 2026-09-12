@@ -35,7 +35,7 @@ See [`backend/README.md`](backend/README.md).
 ## CI/CD
 
 - **`build-apk.yml`** — builds the release APK on every push and publishes it to the `latest` GitHub Release (the download link above). Needs repository secret `SSO_CLIENT_ID`, plus optional repository **variables** `SSO_BASE_URL`, `SSO_REDIRECT_URI` and `BACKEND_BASE_URL` if you're not using this repo's defaults.
-- **`backend-docker.yml`** — builds `backend/`'s Docker image and pushes it to Docker Hub as `<DOCKERHUB_USERNAME>/termul-backend:latest` whenever `backend/**` changes. Needs repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (a Docker Hub [access token](https://hub.docker.com/settings/security), not your password).
+- **`backend-docker.yml`** — builds `backend/`'s Docker image and pushes it whenever `backend/**` changes. Pushes to Docker Hub by default; see `backend/README.md` for pushing to your own registry instead. Needs repository secrets `DOCKER_USERNAME` and `DOCKER_PASSWORD` (a Docker Hub [access token](https://hub.docker.com/settings/security), not your password, if using Docker Hub).
 
 Add secrets/variables under **Settings → Secrets and variables → Actions**.
 
