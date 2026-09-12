@@ -16,6 +16,11 @@ Built for 64-bit ARM (`arm64-v8a`) only, which is virtually every Android device
 - Passwords/private keys are stored in the device's secure storage (Keychain/Keystore), never in plaintext
 - Interactive terminal per host (xterm + dartssh2)
 - SSO login (OAuth2 Authorization Code Grant, e.g. Laravel Passport) — the app never holds the client_secret; `backend/` performs the `/oauth/token` exchange on its behalf
+- Tag hosts and search/filter the host list by name, address, username or tag
+- Optional biometric/PIN app lock, re-armed whenever the app is backgrounded
+- Broadcast a command to several open terminal sessions at once
+- Terminal sessions auto-reconnect (with backoff) if the connection drops unexpectedly
+- SSH port forwarding (local `-L` and remote `-R` tunnels) per host
 
 ## Project structure
 
