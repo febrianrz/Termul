@@ -28,16 +28,16 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Verify SSO_CLIENT_ID secret is set
+      - name: Verify ALTER_CLIENT_ID secret is set
         run: |
-          if [ -z "${{ secrets.SSO_CLIENT_ID }}" ]; then
-            echo "::error::Repository secret SSO_CLIENT_ID is not set. Without it the APK is built with an empty client_id, and SSO login fails with a confusing 'unsupported_grant_type' error from the SSO server. Set it under Settings -> Secrets and variables -> Actions."
+          if [ -z "${{ secrets.ALTER_CLIENT_ID }}" ]; then
+            echo "::error::Repository secret ALTER_CLIENT_ID is not set. Without it the APK is built with an empty client_id, and SSO login fails with a confusing 'unsupported_grant_type' error from the SSO server. Set it under Settings -> Secrets and variables -> Actions."
             exit 1
           fi
 
       - name: Build release APK
         env:
-          SSO_CLIENT_ID: ${{ secrets.SSO_CLIENT_ID }}
+          SSO_CLIENT_ID: ${{ secrets.ALTER_CLIENT_ID }}
           SSO_BASE_URL: ${{ vars.SSO_BASE_URL }}
           SSO_REDIRECT_URI: ${{ vars.SSO_REDIRECT_URI }}
           BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
@@ -77,10 +77,10 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Verify SSO_CLIENT_ID secret is set
+      - name: Verify ALTER_CLIENT_ID secret is set
         run: |
-          if [ -z "${{ secrets.SSO_CLIENT_ID }}" ]; then
-            echo "::error::Repository secret SSO_CLIENT_ID is not set. Without it the build is compiled with an empty client_id, and SSO login fails with a confusing 'unsupported_grant_type' error from the SSO server. Set it under Settings -> Secrets and variables -> Actions."
+          if [ -z "${{ secrets.ALTER_CLIENT_ID }}" ]; then
+            echo "::error::Repository secret ALTER_CLIENT_ID is not set. Without it the build is compiled with an empty client_id, and SSO login fails with a confusing 'unsupported_grant_type' error from the SSO server. Set it under Settings -> Secrets and variables -> Actions."
             exit 1
           fi
 
@@ -89,7 +89,7 @@ jobs:
       # a signing certificate, and a provisioning profile (not set up yet).
       - name: Build iOS (no code signing)
         env:
-          SSO_CLIENT_ID: ${{ secrets.SSO_CLIENT_ID }}
+          SSO_CLIENT_ID: ${{ secrets.ALTER_CLIENT_ID }}
           SSO_BASE_URL: ${{ vars.SSO_BASE_URL }}
           SSO_REDIRECT_URI: ${{ vars.SSO_REDIRECT_URI }}
           BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
