@@ -13,6 +13,7 @@ SSO provider, as long as it follows that same shape.
 
 ## Endpoints
 
+- `GET /` — the marketing landing page (served from `public/`)
 - `GET /health` — liveness check
 - `POST /auth/exchange` — body `{ "code": "..." }`, returns the SSO server's token response (`access_token`, `refresh_token`, `expires_in`, `token_type`)
 - `POST /auth/refresh` — body `{ "refresh_token": "..." }`, same response shape

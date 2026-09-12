@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import path from "path";
+
 import express from "express";
 
 import { config } from "./config";
@@ -13,6 +15,8 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/auth", authRouter);
+
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 app.listen(config.port, () => {
   console.log(`Termul backend listening on port ${config.port}`);
