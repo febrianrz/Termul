@@ -5,6 +5,7 @@ import '../models/command_shortcut.dart';
 import '../models/host_group.dart';
 import '../models/port_forward.dart';
 import '../models/ssh_host.dart';
+import '../models/web_shortcut.dart';
 
 /// Stores host metadata in a local Hive box and secrets (password,
 /// private key, passphrase) in the platform secure storage (Keychain /
@@ -14,18 +15,21 @@ class HostRepository {
   static const _groupsBoxName = 'ssh_groups';
   static const _shortcutsBoxName = 'command_shortcuts';
   static const _forwardsBoxName = 'port_forwards';
+  static const _webShortcutsBoxName = 'web_shortcuts';
 
   final _secureStorage = const FlutterSecureStorage();
   late final Box _box;
   late final Box _groupsBox;
   late final Box _shortcutsBox;
   late final Box _forwardsBox;
+  late final Box _webShortcutsBox;
 
   Future<void> init() async {
     _box = await Hive.openBox(_boxName);
     _groupsBox = await Hive.openBox(_groupsBoxName);
     _shortcutsBox = await Hive.openBox(_shortcutsBoxName);
     _forwardsBox = await Hive.openBox(_forwardsBoxName);
+    _webShortcutsBox = await Hive.openBox(_webShortcutsBoxName);
   }
 
   List<SshHost> getAll() {
@@ -131,5 +135,22 @@ class HostRepository {
 
   Future<void> deleteForward(String id) async {
     await _forwardsBox.delete(id);
+  }
+
+  List<WebShortcut> getAllWebShortcuts() {
+    return _webShortcutsBox.values
+        .map(
+          (e) => WebShortcut.fromMap(Map<dynamic, dynamic>.from(e as Map)),
+        )
+        .toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  }
+
+  Future<void> saveWebShortcut(WebShortcut shortcut) async {
+    await _webShortcutsBox.put(shortcut.id, shortcut.toMap());
+  }
+
+  Future<void> deleteWebShortcut(String id) async {
+    await _webShortcutsBox.delete(id);
   }
 }

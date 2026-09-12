@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TerMul</title>
-<meta name="description" content="TerMul is a free, open-source SSH terminal client for Android. Real terminal emulation, password/private-key auth, QR-code credential import, and optional SSO login — no ads, no subscription.">
+<meta name="description" content="TerMul is a free, open-source SSH terminal client for Android — real terminal emulation with tabbed multiplexing, SFTP, port forwarding, QR-code credential import, and optional SSO login. No ads, no subscription.">
 <meta name="theme-color" content="#000000">
 <link rel="icon" type="image/jpeg" href="logo.jpg">
 <meta name="color-scheme" content="dark">
@@ -12,11 +12,11 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TerMul">
 <meta property="og:title" content="TerMul — SSH from your pocket. Secure. Free. No BS.">
-<meta property="og:description" content="A free, open-source SSH terminal client for Android — real terminal emulation, QR-code credential import, and optional SSO login. No ads, no subscription.">
+<meta property="og:description" content="A free, open-source SSH terminal client for Android — tabbed multiplexing, SFTP, port forwarding, QR-code credential import, and optional SSO login. No ads, no subscription.">
 <meta property="og:image" content="logo.jpg">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="TerMul — SSH from your pocket. Secure. Free. No BS.">
-<meta name="twitter:description" content="Free, open-source SSH terminal client for Android with QR-code credential import and optional SSO login.">
+<meta name="twitter:description" content="Free, open-source SSH terminal client for Android with SFTP, port forwarding, tabbed sessions, and QR-code credential import.">
 <meta name="twitter:image" content="logo.jpg">
 <!-- og:image/twitter:image resolve relative to this page's URL; once this
      is live on a real domain, add og:url with the absolute page URL for
@@ -548,9 +548,9 @@
     <h1>SSH from your pocket.<br>Secure. Free. No BS.</h1>
     <p class="lede">
       TerMul keeps every SSH host you own, logs in with a key or a QR
-      scan, then hands you a real terminal — not a webview pretending to
-      be one. Built by one mobile dev, shipped free for everyone else
-      stuck doing the same thing.
+      scan, then hands you a real terminal — tabbed and multiplexed, not
+      a webview pretending to be one. Built by one mobile dev, shipped
+      free for everyone else stuck doing the same thing.
     </p>
     <div class="cta-row">
       <a class="btn btn-primary" href="https://github.com/febrianrz/Termul/releases/latest/download/app-release.apk" target="_blank" rel="noopener">↓ Download APK</a>
@@ -596,9 +596,10 @@
       </div>
       <div class="trust-card">
         <div class="glyph">03 · SIMPLE</div>
-        <h3>Three screens, done</h3>
-        <p>Host list, add host, terminal. Scan a QR to load a password or
-        private key instead of hunting for the copy button.</p>
+        <h3>No menu-diving</h3>
+        <p>Terminal, SFTP, port forwarding, shortcuts — one tap from the
+        host list. Scan a QR to load a password or private key instead
+        of hunting for the copy button.</p>
       </div>
     </div>
   </section>
@@ -612,9 +613,29 @@
     </div>
     <div class="features">
       <div class="feature">
+        <div class="label">Real terminal, multiplexed</div>
+        <p>Built on xterm + dartssh2. Every open session gets its own tab —
+        switch instantly, nothing disconnects in the background.</p>
+      </div>
+      <div class="feature">
+        <div class="label">SFTP built in</div>
+        <p>Browse, upload, and download files over the same connection —
+        no separate app to juggle.</p>
+      </div>
+      <div class="feature">
+        <div class="label">Port forwarding</div>
+        <p>Local and remote tunnels, managed per host, without opening a
+        second terminal to run <code>ssh -L</code> by hand.</p>
+      </div>
+      <div class="feature">
+        <div class="label">Web shortcuts</div>
+        <p>A launcher grid for the dashboards you open constantly —
+        Portainer, Dokploy, GitHub — icon fetched automatically.</p>
+      </div>
+      <div class="feature">
         <div class="label">Multi-host + groups</div>
-        <p>Save as many servers as you run, sorted into groups instead of
-        one endless list.</p>
+        <p>Save as many servers as you run, sorted into groups with
+        search and tags instead of one endless list.</p>
       </div>
       <div class="feature">
         <div class="label">Password or private key</div>
@@ -622,24 +643,19 @@
         encrypted at rest.</p>
       </div>
       <div class="feature">
-        <div class="label">Scan QR for credentials</div>
-        <p>Long passwords and private keys get scanned in, not typed or
-        copy-pasted by hand.</p>
+        <div class="label">Biometric lock</div>
+        <p>Fingerprint or PIN to open the app, and again after 10 minutes
+        idle — even if it's still on screen.</p>
+      </div>
+      <div class="feature">
+        <div class="label">Auto-reconnect</div>
+        <p>A dropped connection retries itself with backoff instead of
+        leaving you staring at a dead terminal.</p>
       </div>
       <div class="feature">
         <div class="label">SSO login</div>
         <p>One account to sign in with — hand a team access without
         sharing raw server passwords.</p>
-      </div>
-      <div class="feature">
-        <div class="label">A real terminal</div>
-        <p>Built on xterm + dartssh2 — actual terminal emulation, not a
-        polished-up webview.</p>
-      </div>
-      <div class="feature">
-        <div class="label">Built for developers</div>
-        <p>The same tool the author uses to SSH into their own boxes.
-        Speed over polish, every time.</p>
       </div>
     </div>
   </section>
@@ -649,9 +665,10 @@
       <p class="eyebrow">// sync from your computer</p>
       <h2>Publish SSH keys straight from your terminal</h2>
       <p>The <code>termul</code> agent reads your <code>~/.ssh/config</code>,
-      lets you pick which hosts to send, then shows one QR code per host —
-      scan it in the app. Nothing touches the network; the QR code is the
-      only thing that leaves your screen.</p>
+      lets you pick which hosts to send, then packs them into as few QR
+      codes as possible — usually just one — scan it in the app. Nothing
+      touches the network; the QR code is the only thing that leaves your
+      screen.</p>
     </div>
     <div class="cmd-block">
       <div class="cmd-row">
@@ -696,6 +713,11 @@
         <span class="check">✓</span>
         <span class="what">Hosts & groups</span>
         <span class="desc">100% local on your device — no server holds that data yet (cross-device sync is on the roadmap).</span>
+      </div>
+      <div class="log-row">
+        <span class="check">✓</span>
+        <span class="what">App lock</span>
+        <span class="desc">Optional fingerprint/PIN check on open, and again after 10 minutes idle — even with the app left on screen.</span>
       </div>
     </div>
   </section>
