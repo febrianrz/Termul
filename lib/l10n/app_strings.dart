@@ -235,4 +235,20 @@ class AppStrings {
       _t('Passphrase (opsional)', 'Passphrase (optional)');
   String get newGroup => _t('Grup Baru', 'New Group');
   String get groupName => _t('Nama grup', 'Group name');
+
+  // ---------------------------------------------------------------------
+  // Host groups
+  // ---------------------------------------------------------------------
+  String get addGroup => _t('Tambah Grup', 'Add Group');
+  String get renameGroup => _t('Rename Grup', 'Rename Group');
+  String get deleteGroupTitle => _t('Hapus grup?', 'Delete group?');
+  String deleteGroupBody(String name) => _t(
+    'Grup "$name" akan dihapus. Host di dalamnya tidak ikut '
+    'terhapus, hanya jadi tanpa grup.',
+    'Group "$name" will be deleted. Hosts inside it are not '
+    'deleted, they just become ungrouped.',
+  );
+  String get sshGroups => _t('Grup SSH', 'SSH Groups');
+  String get noGroupsYet => _t('Belum ada grup', 'No groups yet');
+  String get addGroupTooltip => _t('Tambah grup', 'Add group');
 }
