@@ -7,6 +7,7 @@ import '../models/command_shortcut.dart';
 import '../models/ssh_host.dart';
 import '../session/session_manager.dart';
 import '../session/terminal_session.dart';
+import '../widgets/terminal_toolbar.dart';
 import 'shortcut_screen.dart';
 
 /// Displays a [TerminalSession] for [host], resuming it if one is already
@@ -143,6 +144,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 keyboardType: TextInputType.visiblePassword,
               ),
             ),
+            if (!closed) TerminalToolbar(session: _session),
           ],
         );
     }
