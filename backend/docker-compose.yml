@@ -3,6 +3,9 @@ services:
     # Docker Hub: <username>/termul-backend:latest
     # Custom registry: <registry-host>/<username>/termul-backend:latest
     image: ${DOCKER_IMAGE}
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     env_file: .env
     ports:
