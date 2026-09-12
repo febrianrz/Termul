@@ -3,19 +3,24 @@
 Brokers the SSO login flow so the OAuth `client_secret` never has to ship
 inside the mobile app: the app gets an authorization `code` from the
 browser redirect and sends it here; this service exchanges it for tokens
-with Alter Indonesia and hands them back over HTTPS. Will also host
+with your SSO server and hands them back over HTTPS. Will also host
 cross-device sync (host list, snippets) in the future.
+
+Works with any OAuth2 Authorization Code Grant server shaped like Laravel
+Passport (`/oauth/authorize`, `/oauth/token`, `/api/user`, `/api/logout`) —
+just point `SSO_BASE_URL` at it. No code changes needed to use a different
+SSO provider, as long as it follows that same shape.
 
 ## Endpoints
 
 - `GET /health` — liveness check
-- `POST /auth/exchange` — body `{ "code": "..." }`, returns Alter Indonesia's token response (`access_token`, `refresh_token`, `expires_in`, `token_type`)
+- `POST /auth/exchange` — body `{ "code": "..." }`, returns the SSO server's token response (`access_token`, `refresh_token`, `expires_in`, `token_type`)
 - `POST /auth/refresh` — body `{ "refresh_token": "..." }`, same response shape
 
 ## Run locally
 
 ```bash
-cp .env.example .env   # fill in ALTER_CLIENT_ID / ALTER_CLIENT_SECRET
+cp .env.example .env   # fill in SSO_CLIENT_ID / SSO_CLIENT_SECRET
 npm install
 npm run dev
 ```
@@ -36,7 +41,7 @@ required CI secrets).
 | Variable | Required | Default |
 | --- | --- | --- |
 | `PORT` | no | `3000` |
-| `ALTER_BASE_URL` | no | `https://one.alterindonesia.com` |
-| `ALTER_CLIENT_ID` | yes | — |
-| `ALTER_CLIENT_SECRET` | yes | — |
-| `ALTER_REDIRECT_URI` | no | `com.febrianrz.termul://callback` |
+| `SSO_BASE_URL` | no | `https://one.alterindonesia.com` |
+| `SSO_CLIENT_ID` | yes | — |
+| `SSO_CLIENT_SECRET` | yes | — |
+| `SSO_REDIRECT_URI` | no | `com.febrianrz.termul://callback` — must exactly match the app's `SSO_REDIRECT_URI` |

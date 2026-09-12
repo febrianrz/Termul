@@ -6,11 +6,14 @@ function requireEnv(name: string): string {
   return value;
 }
 
+// Nothing provider-specific is hardcoded as required config - forks point
+// this at their own OAuth2 SSO server via env vars. The defaults below just
+// match this repo's own deployment (Alter Indonesia).
 export const config = {
   port: process.env.PORT ? Number(process.env.PORT) : 3000,
-  alterBaseUrl: process.env.ALTER_BASE_URL ?? "https://one.alterindonesia.com",
-  alterClientId: requireEnv("ALTER_CLIENT_ID"),
-  alterClientSecret: requireEnv("ALTER_CLIENT_SECRET"),
-  alterRedirectUri:
-    process.env.ALTER_REDIRECT_URI ?? "com.febrianrz.termul://callback",
+  ssoBaseUrl: process.env.SSO_BASE_URL ?? "https://one.alterindonesia.com",
+  ssoClientId: requireEnv("SSO_CLIENT_ID"),
+  ssoClientSecret: requireEnv("SSO_CLIENT_SECRET"),
+  ssoRedirectUri:
+    process.env.SSO_REDIRECT_URI ?? "com.febrianrz.termul://callback",
 };

@@ -1,4 +1,6 @@
 {
-  "ALTER_CLIENT_ID": "YOUR_CLIENT_ID",
+  "SSO_BASE_URL": "https://one.alterindonesia.com",
+  "SSO_CLIENT_ID": "YOUR_CLIENT_ID",
+  "SSO_REDIRECT_URI": "com.febrianrz.termul://callback",
   "BACKEND_BASE_URL": "http://10.0.2.2:3000"
 }

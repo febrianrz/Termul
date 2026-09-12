@@ -4,26 +4,26 @@ import { config } from "../config";
 
 const router = Router();
 
-interface AlterTokenResponse {
+interface SsoTokenResponse {
   token_type: string;
   expires_in: number;
   access_token: string;
   refresh_token: string;
 }
 
-class AlterTokenError extends Error {
+class SsoTokenError extends Error {
   constructor(
     public status: number,
     public details: string,
   ) {
-    super(`Alter Indonesia token request failed (${status})`);
+    super(`SSO token request failed (${status})`);
   }
 }
 
-async function requestAlterToken(
+async function requestSsoToken(
   body: Record<string, string>,
-): Promise<AlterTokenResponse> {
-  const response = await fetch(`${config.alterBaseUrl}/oauth/token`, {
+): Promise<SsoTokenResponse> {
+  const response = await fetch(`${config.ssoBaseUrl}/oauth/token`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -33,10 +33,10 @@ async function requestAlterToken(
   });
 
   if (!response.ok) {
-    throw new AlterTokenError(response.status, await response.text());
+    throw new SsoTokenError(response.status, await response.text());
   }
 
-  return (await response.json()) as AlterTokenResponse;
+  return (await response.json()) as SsoTokenResponse;
 }
 
 /**
@@ -52,16 +52,16 @@ router.post("/exchange", async (req, res) => {
   }
 
   try {
-    const token = await requestAlterToken({
+    const token = await requestSsoToken({
       grant_type: "authorization_code",
-      client_id: config.alterClientId,
-      client_secret: config.alterClientSecret,
-      redirect_uri: config.alterRedirectUri,
+      client_id: config.ssoClientId,
+      client_secret: config.ssoClientSecret,
+      redirect_uri: config.ssoRedirectUri,
       code,
     });
     res.json(token);
   } catch (err) {
-    if (err instanceof AlterTokenError) {
+    if (err instanceof SsoTokenError) {
       res
         .status(err.status)
         .json({ error: "Token exchange failed", details: err.details });
@@ -79,15 +79,15 @@ router.post("/refresh", async (req, res) => {
   }
 
   try {
-    const token = await requestAlterToken({
+    const token = await requestSsoToken({
       grant_type: "refresh_token",
-      client_id: config.alterClientId,
-      client_secret: config.alterClientSecret,
+      client_id: config.ssoClientId,
+      client_secret: config.ssoClientSecret,
       refresh_token: refreshToken,
     });
     res.json(token);
   } catch (err) {
-    if (err instanceof AlterTokenError) {
+    if (err instanceof SsoTokenError) {
       res
         .status(err.status)
         .json({ error: "Token refresh failed", details: err.details });

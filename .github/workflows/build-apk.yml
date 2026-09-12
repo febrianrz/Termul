@@ -30,12 +30,16 @@ jobs:
 
       - name: Build release APK
         env:
-          ALTER_CLIENT_ID: ${{ secrets.ALTER_CLIENT_ID }}
+          SSO_CLIENT_ID: ${{ secrets.SSO_CLIENT_ID }}
+          SSO_BASE_URL: ${{ vars.SSO_BASE_URL }}
+          SSO_REDIRECT_URI: ${{ vars.SSO_REDIRECT_URI }}
           BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
         run: |
-          flutter build apk --release \
-            --dart-define=ALTER_CLIENT_ID="$ALTER_CLIENT_ID" \
-            --dart-define=BACKEND_BASE_URL="${BACKEND_BASE_URL:-http://10.0.2.2:3000}"
+          args=(--dart-define=SSO_CLIENT_ID="$SSO_CLIENT_ID")
+          [ -n "$SSO_BASE_URL" ] && args+=(--dart-define=SSO_BASE_URL="$SSO_BASE_URL")
+          [ -n "$SSO_REDIRECT_URI" ] && args+=(--dart-define=SSO_REDIRECT_URI="$SSO_REDIRECT_URI")
+          [ -n "$BACKEND_BASE_URL" ] && args+=(--dart-define=BACKEND_BASE_URL="$BACKEND_BASE_URL")
+          flutter build apk --release "${args[@]}"
 
       - name: Upload APK (build artifact)
         uses: actions/upload-artifact@v4
