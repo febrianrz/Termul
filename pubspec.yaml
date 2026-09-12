@@ -66,6 +66,13 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/app_icon.jpg"
+  # Without these, Android has no proper adaptive-icon layers, so modern
+  # launchers auto-shrink the flat square image and center it on a plain
+  # white circle/squircle - the "tiny logo floating in a white blob" look.
+  # The foreground is the same logo with its background stripped to
+  # transparency and padded to the adaptive-icon safe zone.
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
