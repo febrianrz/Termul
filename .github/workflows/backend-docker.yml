@@ -85,9 +85,16 @@ jobs:
 
       # Only runs once the new image has actually been pushed. The webhook
       # URL itself (including its token) is a secret - it must never be
-      # hardcoded here, since anyone with it can trigger a deploy.
+      # hardcoded here, since anyone with it can trigger a deploy. The
+      # emptiness check has to happen inside the shell (rather than an
+      # `if:` on the step) because the `secrets` context isn't available
+      # in step/job `if:` conditionals.
       - name: Trigger Dokploy deploy
-        if: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK != '' }}
         env:
           DOKPLOY_DEPLOY_WEBHOOK: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK }}
-        run: curl -fsS -X POST "$DOKPLOY_DEPLOY_WEBHOOK"
+        run: |
+          if [ -n "$DOKPLOY_DEPLOY_WEBHOOK" ]; then
+            curl -fsS -X POST "$DOKPLOY_DEPLOY_WEBHOOK"
+          else
+            echo "DOKPLOY_DEPLOY_WEBHOOK not set, skipping deploy trigger."
+          fi
