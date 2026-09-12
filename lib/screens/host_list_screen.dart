@@ -18,7 +18,7 @@ import 'session_switcher_screen.dart';
 import 'settings_screen.dart';
 import 'sftp_screen.dart';
 import 'shortcut_screen.dart';
-import 'terminal_screen.dart';
+import 'terminal_tabs_screen.dart';
 
 class HostListScreen extends StatefulWidget {
   const HostListScreen({super.key});
@@ -256,7 +256,9 @@ class _HostListScreenState extends State<HostListScreen> {
         overflow: TextOverflow.ellipsis,
       ),
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => TerminalScreen(host: host)),
+        MaterialPageRoute(
+          builder: (_) => TerminalTabsScreen(initialHost: host),
+        ),
       ),
       trailing: PopupMenuButton<String>(
         onSelected: (value) {

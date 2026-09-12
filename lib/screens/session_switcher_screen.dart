@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../session/session_manager.dart';
 import '../session/terminal_session.dart';
 import 'broadcast_screen.dart';
-import 'terminal_screen.dart';
+import 'terminal_tabs_screen.dart';
 
 /// Lists every SSH session currently tracked by [SessionManager] - running
 /// or disconnected - so the user can resume one without reconnecting, or
@@ -94,7 +94,7 @@ class _SessionTile extends StatelessWidget {
           ),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => TerminalScreen(host: session.host),
+              builder: (_) => TerminalTabsScreen(initialHost: session.host),
             ),
           ),
           trailing: IconButton(

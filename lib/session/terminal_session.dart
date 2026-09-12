@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:xterm/xterm.dart';
 
 import '../data/host_repository.dart';
@@ -62,16 +63,21 @@ const _reconnectBackoffSeconds = [2, 4, 8, 16, 30];
 
 /// One live (or once-live) SSH connection plus its terminal buffer.
 ///
-/// Owned by [SessionManager] rather than any [TerminalScreen], so it keeps
-/// running when the screen showing it is popped - reopening the same host
-/// re-displays the same [terminal] (scrollback and all) instead of
-/// reconnecting from scratch.
+/// Owned by [SessionManager] rather than any screen showing it, so it keeps
+/// running when its tab isn't the one in front, or the terminal screen is
+/// popped entirely - reopening the same host re-displays the same
+/// [terminal] (scrollback and all) instead of reconnecting from scratch.
 class TerminalSession extends ChangeNotifier {
   TerminalSession(this.host);
 
   final SshHost host;
   final Terminal terminal = Terminal(maxLines: 10000);
   final TerminalController terminalController = TerminalController();
+
+  /// Owned by the session (not the tab widget showing it) so the tabs
+  /// screen can request focus for whichever session's tab is active,
+  /// without a background tab's [TerminalView] stealing keyboard input.
+  final FocusNode focusNode = FocusNode();
 
   SSHClient? _client;
   SSHSession? _sshSession;
@@ -375,6 +381,7 @@ class TerminalSession extends ChangeNotifier {
     _disposed = true;
     _reconnectTimer?.cancel();
     unawaited(_stopAllForwards());
+    focusNode.dispose();
     super.dispose();
   }
 }
