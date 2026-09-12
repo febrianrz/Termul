@@ -25,21 +25,25 @@ termul
 It reads `~/.ssh/config` (matching each `Host` block that has a resolvable
 `IdentityFile` to its `HostName`/`User`/`Port`) plus any other private keys
 it finds directly in `~/.ssh`, and lists them as a numbered checklist.
-Pick the ones you want (space-separated numbers), and it shows one QR code
-per host, one at a time — press Enter after each is scanned to move to the
-next.
+Pick the ones you want (space-separated numbers), and it packs as many of
+them as fit into each QR code — for a handful of hosts with modern keys
+(ed25519/ecdsa) that's usually just one QR for the whole batch. A host
+whose own key is already large (a big RSA key) gets a QR to itself instead
+of failing to fit; if you selected more hosts than one QR can hold, it
+shows the next one after you press Enter.
 
-In the TerMul app, open **Import dari Komputer** from the host list and scan
-each code as it appears; it opens the usual add-host form pre-filled so you
-can review (or fix the address/username, if it wasn't in your ssh config)
-before saving.
+In the TerMul app, open **Import dari Komputer** from the host list and
+scan each code as it appears. Each one shows a confirmation listing every
+host it contains before saving them - review the list (or cancel and fix
+the address/username in the app afterward, if it wasn't in your ssh
+config).
 
-## Why one QR per host
+## Why hosts sometimes still get their own QR code
 
-A QR code holds a few KB at most. An RSA key alone can be close to that
-limit, so bundling several hosts into one code isn't reliable. One code per
-host keeps every scan comfortably within capacity, regardless of key type
-or size.
+A QR code holds a few KB at most, and an RSA key alone can be close to
+that. Hosts are grouped into a QR code up to a safe size budget; a host
+that would push a group over budget starts a new one instead of making
+the code too dense to scan reliably.
 
 ## What gets read
 
