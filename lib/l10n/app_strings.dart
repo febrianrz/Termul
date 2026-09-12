@@ -187,4 +187,12 @@ class AppStrings {
     'Login optional — for cross-device sync later',
   );
   String get loginWithAlterOne => 'Login with Alter One';
+
+  // ---------------------------------------------------------------------
+  // Lock screen
+  // ---------------------------------------------------------------------
+  String get appLocked => _t('Termul terkunci', 'Termul locked');
+  String get verificationFailed =>
+      _t('Verifikasi gagal atau dibatalkan', 'Verification failed or cancelled');
+  String get verifying => _t('Memverifikasi…', 'Verifying…');
 }
