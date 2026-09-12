@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/host_repository.dart';
+import '../l10n/app_strings.dart';
 import '../models/web_shortcut.dart';
 import '../services/favicon_fetcher.dart';
 
@@ -17,6 +18,7 @@ class WebShortcutScreen extends StatefulWidget {
 }
 
 class _WebShortcutScreenState extends State<WebShortcutScreen> {
+  final AppStrings _s = AppStrings();
   late List<WebShortcut> _shortcuts;
 
   @override
@@ -39,20 +41,20 @@ class _WebShortcutScreenState extends State<WebShortcutScreen> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(shortcut == null ? 'Tambah Shortcut' : 'Edit Shortcut'),
+        title: Text(shortcut == null ? _s.addShortcut : _s.editShortcut),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
               autofocus: true,
-              decoration: const InputDecoration(labelText: 'Nama'),
+              decoration: InputDecoration(labelText: _s.shortcutName),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: urlController,
-              decoration: const InputDecoration(
-                labelText: 'URL',
+              decoration: InputDecoration(
+                labelText: _s.shortcutUrl,
                 hintText: 'portainer.local:9000',
               ),
               keyboardType: TextInputType.url,
@@ -62,11 +64,11 @@ class _WebShortcutScreenState extends State<WebShortcutScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
+            child: Text(_s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Simpan'),
+            child: Text(_s.save),
           ),
         ],
       ),
@@ -106,16 +108,16 @@ class _WebShortcutScreenState extends State<WebShortcutScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus?'),
-        content: Text('Shortcut "${shortcut.name}" akan dihapus.'),
+        title: Text(_s.confirmDeleteTitle),
+        content: Text(_s.deleteShortcutBody(shortcut.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
+            child: Text(_s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Hapus'),
+            child: Text(_s.delete),
           ),
         ],
       ),
@@ -183,26 +185,26 @@ class _WebShortcutScreenState extends State<WebShortcutScreen> {
     final others = _shortcuts.where((s) => !s.favorite).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Web Shortcut')),
+      appBar: AppBar(title: Text(_s.webShortcutTitle)),
       body: _shortcuts.isEmpty
-          ? const Center(child: Text('Belum ada shortcut'))
+          ? Center(child: Text(_s.noShortcutsYet))
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 if (favorites.isNotEmpty) ...[
-                  _sectionLabel('Favorit'),
+                  _sectionLabel(_s.favorites),
                   _grid(favorites),
                   const SizedBox(height: 20),
                 ],
                 if (others.isNotEmpty) ...[
-                  if (favorites.isNotEmpty) _sectionLabel('Semua'),
+                  if (favorites.isNotEmpty) _sectionLabel(_s.allShortcuts),
                   _grid(others),
                 ],
               ],
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addOrEdit(),
-        tooltip: 'Tambah shortcut',
+        tooltip: _s.addShortcutTooltip,
         child: const Icon(Icons.add),
       ),
     );
@@ -225,6 +227,7 @@ class _ShortcutTile extends StatelessWidget {
   });
 
   Future<void> _showMenu(BuildContext context) async {
+    final s = AppStrings();
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -236,18 +239,18 @@ class _ShortcutTile extends StatelessWidget {
                 shortcut.favorite ? Icons.star : Icons.star_border,
               ),
               title: Text(
-                shortcut.favorite ? 'Hapus dari favorit' : 'Jadikan favorit',
+                shortcut.favorite ? s.removeFromFavorites : s.addToFavorites,
               ),
               onTap: () => Navigator.of(context).pop('favorite'),
             ),
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('Edit'),
+              title: Text(s.edit),
               onTap: () => Navigator.of(context).pop('edit'),
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline),
-              title: const Text('Hapus'),
+              title: Text(s.delete),
               onTap: () => Navigator.of(context).pop('delete'),
             ),
           ],

@@ -66,4 +66,24 @@ class AppStrings {
   String get noMatchingHosts =>
       _t('Tidak ada host yang cocok', 'No hosts match');
   String get ungrouped => _t('Tanpa grup', 'Ungrouped');
+
+  // ---------------------------------------------------------------------
+  // Web Shortcuts
+  // ---------------------------------------------------------------------
+  String get webShortcutTitle => _t('Web Shortcut', 'Web Shortcuts');
+  String get addShortcut => _t('Tambah Shortcut', 'Add Shortcut');
+  String get editShortcut => _t('Edit Shortcut', 'Edit Shortcut');
+  String get shortcutName => _t('Nama', 'Name');
+  String get shortcutUrl => 'URL';
+  String get favorites => _t('Favorit', 'Favorites');
+  String get allShortcuts => _t('Semua', 'All');
+  String get noShortcutsYet => _t('Belum ada shortcut', 'No shortcuts yet');
+  String get addShortcutTooltip => _t('Tambah shortcut', 'Add shortcut');
+  String get removeFromFavorites =>
+      _t('Hapus dari favorit', 'Remove from favorites');
+  String get addToFavorites => _t('Jadikan favorit', 'Add to favorites');
+  String deleteShortcutBody(String name) => _t(
+    'Shortcut "$name" akan dihapus.',
+    'Shortcut "$name" will be deleted.',
+  );
 }
