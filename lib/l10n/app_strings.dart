@@ -291,4 +291,13 @@ class AppStrings {
   String get targetHostHint =>
       _t('contoh: localhost atau 10.0.0.5', 'e.g. localhost or 10.0.0.5');
   String get targetPort => _t('Target port', 'Target port');
+
+  // ---------------------------------------------------------------------
+  // Session switcher
+  // ---------------------------------------------------------------------
+  String get connecting => _t('Menyambungkan…', 'Connecting…');
+  String get reconnectingLabel => _t('Menyambungkan ulang…', 'Reconnecting…');
+  String get disconnected => _t('Terputus', 'Disconnected');
+  String failedLabel(String error) => _t('Gagal: $error', 'Failed: $error');
+  String get closeSession => _t('Tutup sesi', 'Close session');
 }
