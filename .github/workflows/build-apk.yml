@@ -46,6 +46,10 @@ jobs:
           [ -n "$SSO_BASE_URL" ] && args+=(--dart-define=SSO_BASE_URL="$SSO_BASE_URL")
           [ -n "$SSO_REDIRECT_URI" ] && args+=(--dart-define=SSO_REDIRECT_URI="$SSO_REDIRECT_URI")
           [ -n "$BACKEND_BASE_URL" ] && args+=(--dart-define=BACKEND_BASE_URL="$BACKEND_BASE_URL")
+          # The "latest" release is continuously replaced by every push, so
+          # pubspec.yaml's fixed version alone can't tell two APKs apart.
+          # Stamp the CI run number as the build number, shown in Settings.
+          args+=(--build-number="${{ github.run_number }}")
           flutter build apk --release "${args[@]}"
 
       - name: Upload APK (build artifact)
@@ -98,4 +102,5 @@ jobs:
           [ -n "$SSO_BASE_URL" ] && args+=(--dart-define=SSO_BASE_URL="$SSO_BASE_URL")
           [ -n "$SSO_REDIRECT_URI" ] && args+=(--dart-define=SSO_REDIRECT_URI="$SSO_REDIRECT_URI")
           [ -n "$BACKEND_BASE_URL" ] && args+=(--dart-define=BACKEND_BASE_URL="$BACKEND_BASE_URL")
+          args+=(--build-number="${{ github.run_number }}")
           flutter build ios --release --no-codesign "${args[@]}"

@@ -49,6 +49,9 @@ dependencies:
   flutter_web_auth_2: ^5.1.0
   http: ^1.6.0
   mobile_scanner: ^7.4.1
+  # Reads the app's own version/build number (from this file's `version:`)
+  # at runtime, to show it in Settings.
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:

@@ -11,6 +11,7 @@ import 'host_group_screen.dart';
 import 'login_screen.dart';
 import 'qr_import_screen.dart';
 import 'session_switcher_screen.dart';
+import 'settings_screen.dart';
 import 'shortcut_screen.dart';
 import 'terminal_screen.dart';
 
@@ -63,6 +64,12 @@ class _HostListScreenState extends State<HostListScreen> {
   void _openShortcuts() {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const ShortcutScreen()),
+    );
+  }
+
+  void _openSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
     );
   }
 
@@ -237,6 +244,11 @@ class _HostListScreenState extends State<HostListScreen> {
             icon: const Icon(Icons.bolt_outlined),
             tooltip: 'Kelola Shortcut',
             onPressed: _openShortcuts,
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Pengaturan',
+            onPressed: _openSettings,
           ),
           if (_loggedIn)
             IconButton(

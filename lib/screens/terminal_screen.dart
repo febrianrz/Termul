@@ -7,6 +7,7 @@ import '../models/command_shortcut.dart';
 import '../models/ssh_host.dart';
 import '../session/session_manager.dart';
 import '../session/terminal_session.dart';
+import '../theme/theme_controller.dart';
 import '../widgets/terminal_toolbar.dart';
 import 'shortcut_screen.dart';
 
@@ -135,6 +136,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 controller: _session.terminalController,
                 autofocus: true,
                 readOnly: closed,
+                theme: context.watch<ThemeController>().preset.terminalTheme,
                 // Disables the on-screen keyboard's autocorrect/word-suggestion
                 // composing behavior (default TextInputType.emailAddress still
                 // lets some keyboards, e.g. Gboard, batch keystrokes into a
