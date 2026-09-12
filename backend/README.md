@@ -44,14 +44,14 @@ to your own registry instead (self-hosted, GHCR, etc.), set these in
 | `DOCKER_REGISTRY` | secret | your registry's host, e.g. `registry.example.com` (leave unset/empty for Docker Hub) |
 | `DOCKER_USERNAME` | secret | your registry username |
 | `DOCKER_PASSWORD` | secret | your registry password or access token |
-| `DOCKER_IMAGE_NAMESPACE` | secret, optional | the "project"/namespace segment of the image path, if it's different from `DOCKER_USERNAME` (e.g. some registries, like Harbor, log in with an email address but use a separate project name for image paths) |
+| `DOCKER_IMAGE_NAMESPACE` | secret, optional | an extra "project"/namespace segment in the image path, if your registry needs one and it's different from `DOCKER_USERNAME` (e.g. Harbor's project name) |
 
-The pushed image is then `<DOCKER_REGISTRY>/<namespace>/termul-backend`
-(or just `<namespace>/termul-backend` on Docker Hub, no `DOCKER_REGISTRY`
-needed there), where `<namespace>` is `DOCKER_IMAGE_NAMESPACE` if set,
-otherwise `DOCKER_USERNAME` with anything after `@` and any characters
-invalid in a Docker image name stripped out. Your registry must be
-reachable over the public internet — GitHub's hosted runners can't reach a
+The pushed image is then `<DOCKER_REGISTRY>/termul-backend` on a custom
+registry (no namespace segment, unless `DOCKER_IMAGE_NAMESPACE` is set), or
+`<namespace>/termul-backend` on Docker Hub (no `DOCKER_REGISTRY` needed
+there), where `<namespace>` is `DOCKER_IMAGE_NAMESPACE` if set, otherwise
+`DOCKER_USERNAME` — Docker Hub requires a namespace, so it always falls
+back to that. Your registry must be reachable over the public internet — GitHub's hosted runners can't reach a
 registry that's only on your local network or VPN.
 
 ## Deploying

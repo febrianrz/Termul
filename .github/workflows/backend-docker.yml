@@ -21,11 +21,14 @@ jobs:
       # Normalizes DOCKER_REGISTRY (strips a scheme like "https://" and any
       # trailing slash, in case it was entered as a full URL - docker login
       # tolerates that but a raw image reference does not) and computes the
-      # namespace segment of the image path. That namespace must be
-      # lowercase and can't contain "@" or other special characters. It
-      # comes from DOCKER_IMAGE_NAMESPACE if set (e.g. a Harbor "project"
-      # name), otherwise from DOCKER_USERNAME with anything after "@"
-      # dropped - either way it's sanitized the same way.
+      # image name.
+      #
+      # Namespace (the "project"/"org" segment before the image name) is only
+      # added when DOCKER_IMAGE_NAMESPACE is explicitly set - e.g. Harbor's
+      # project name, or Docker Hub, which requires a namespace and has none
+      # of its own to fall back on so DOCKER_USERNAME is used there instead.
+      # A self-hosted registry that stores images as flat repositories
+      # doesn't need one at all, so it's left out unless asked for.
       - name: Compute registry and image name
         id: image
         env:
@@ -39,14 +42,20 @@ jobs:
 
           registry=$(printf '%s' "$REGISTRY" | tr -d '[:space:]' | sed -e 's~^[a-zA-Z][a-zA-Z0-9+.-]*://~~' -e 's~/*$~~')
 
-          namespace_source="$NAMESPACE"
-          if [ -z "$namespace_source" ]; then
-            namespace_source="$USERNAME"
+          namespace=""
+          if [ -n "$NAMESPACE" ]; then
+            namespace=$(sanitize "$NAMESPACE")
+          elif [ -z "$registry" ]; then
+            # No custom registry means Docker Hub, which requires a namespace.
+            namespace=$(sanitize "$USERNAME")
           fi
-          namespace=$(sanitize "$namespace_source")
 
           if [ -n "$registry" ]; then
-            name="$registry/$namespace/termul-backend"
+            if [ -n "$namespace" ]; then
+              name="$registry/$namespace/termul-backend"
+            else
+              name="$registry/termul-backend"
+            fi
           else
             name="$namespace/termul-backend"
           fi
@@ -57,21 +66,6 @@ jobs:
           echo "DEBUG registry=[$registry] (len ${#registry})"
           echo "DEBUG namespace=[$namespace] (len ${#namespace})"
           echo "DEBUG name=[$name]"
-
-          # Temporary: narrow down what's inflating $registry's length, without
-          # ever printing the secret itself (avoids defeating log masking).
-          # Compares against the known-good hostname structurally instead.
-          clean="dregistry5.alterindonesia.com"
-          prefix_extra="${registry%"$clean"}"
-          suffix_extra="${registry#"$clean"}"
-          occurrences=$(grep -o "alterindonesia" <<< "$registry" | wc -l)
-          echo "DEBUG bytes before expected hostname (if it's a suffix of registry): ${#prefix_extra}"
-          echo "DEBUG bytes after expected hostname (if it's a prefix of registry): ${#suffix_extra}"
-          echo "DEBUG occurrences of 'alterindonesia' substring: $occurrences"
-          case "$registry" in
-            *"$clean"*) echo "DEBUG registry CONTAINS the expected hostname somewhere in it" ;;
-            *) echo "DEBUG registry does NOT contain the expected hostname at all" ;;
-          esac
 
       - name: Log in to registry
         uses: docker/login-action@v3
