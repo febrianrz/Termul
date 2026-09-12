@@ -35,7 +35,8 @@ class SettingsScreen extends StatelessWidget {
             secondary: const Icon(Icons.fingerprint),
             title: const Text('Kunci dengan biometrik'),
             subtitle: const Text(
-              'Minta sidik jari/PIN perangkat setiap kali membuka Termul',
+              'Minta sidik jari/PIN perangkat setiap kali membuka Termul, '
+              'atau setelah 10 menit tidak disentuh',
             ),
             value: lock.enabled,
             onChanged: (value) => lock.setEnabled(value),

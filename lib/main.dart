@@ -70,14 +70,24 @@ class _AppView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final seedColor = context.watch<ThemeController>().preset.seedColor;
-    final locked = context.watch<AppLockController>().locked;
+    final lockController = context.watch<AppLockController>();
     return MaterialApp(
       title: 'Termul',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark(seedColor),
       darkTheme: AppTheme.dark(seedColor),
       themeMode: ThemeMode.dark,
-      home: locked ? const LockScreen() : const HostListScreen(),
+      // Any touch anywhere in the app counts as activity, postponing the
+      // idle-timeout lock - this only observes pointer events (translucent
+      // hit-testing), it never intercepts them from the actual widgets.
+      builder: (context, child) => Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) => lockController.registerActivity(),
+        child: child!,
+      ),
+      home: lockController.locked
+          ? const LockScreen()
+          : const HostListScreen(),
     );
   }
 }
