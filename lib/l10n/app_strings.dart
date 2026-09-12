@@ -148,4 +148,15 @@ class AppStrings {
   String get unknownError => _t('kesalahan tidak diketahui', 'unknown error');
   String get emptyFolder => _t('Folder kosong', 'Empty folder');
   String get download => 'Download';
+
+  // ---------------------------------------------------------------------
+  // Command Shortcuts
+  // ---------------------------------------------------------------------
+  String get runShortcut => _t('Jalankan Shortcut', 'Run Shortcut');
+  String get commandLabel => 'Command';
+  String get commandHint => _t('contoh: docker ps', 'e.g. docker ps');
+  String get noCommandShortcutsYet =>
+      _t('Belum ada shortcut', 'No shortcuts yet');
+  String get deleteShortcutTitle =>
+      _t('Hapus shortcut?', 'Delete shortcut?');
 }
