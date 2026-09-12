@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/host_repository.dart';
+import '../models/host_group.dart';
 import '../models/ssh_host.dart';
 import 'qr_scan_screen.dart';
 
@@ -33,9 +34,17 @@ class _HostEditScreenState extends State<HostEditScreen> {
   final _passphraseController = TextEditingController();
 
   late SshAuthType _authType = widget.host?.authType ?? SshAuthType.password;
+  late String? _groupId = widget.host?.groupId;
+  late List<HostGroup> _groups;
   bool _saving = false;
 
   bool get _isEditing => widget.host != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _groups = context.read<HostRepository>().getAllGroups();
+  }
 
   @override
   void dispose() {
@@ -62,6 +71,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
       port: int.tryParse(_portController.text.trim()) ?? 22,
       username: _usernameController.text.trim(),
       authType: _authType,
+      groupId: _groupId,
     );
 
     await repo.save(
@@ -90,6 +100,42 @@ class _HostEditScreenState extends State<HostEditScreen> {
     if (result != null && result.isNotEmpty) {
       setState(() => controller.text = result);
     }
+  }
+
+  Future<void> _addGroup() async {
+    final repo = context.read<HostRepository>();
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Grup Baru'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Nama grup'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+
+    if (name == null || name.isEmpty) return;
+
+    final group = HostGroup(id: const Uuid().v4(), name: name);
+    await repo.saveGroup(group);
+    if (!mounted) return;
+    setState(() {
+      _groups = [..._groups, group];
+      _groupId = group.id;
+    });
   }
 
   @override
@@ -136,6 +182,37 @@ class _HostEditScreenState extends State<HostEditScreen> {
               decoration: const InputDecoration(labelText: 'Username'),
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String?>(
+                    initialValue: _groupId,
+                    decoration: const InputDecoration(
+                      labelText: 'Grup (opsional)',
+                    ),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        child: Text('Tanpa grup'),
+                      ),
+                      ..._groups.map(
+                        (g) => DropdownMenuItem<String?>(
+                          value: g.id,
+                          child: Text(g.name),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) => setState(() => _groupId = value),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.create_new_folder_outlined),
+                  tooltip: 'Grup baru',
+                  onPressed: _addGroup,
+                ),
+              ],
             ),
             const SizedBox(height: 20),
             SegmentedButton<SshAuthType>(

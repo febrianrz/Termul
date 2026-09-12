@@ -10,6 +10,7 @@ class SshHost {
   int port;
   String username;
   SshAuthType authType;
+  String? groupId;
 
   SshHost({
     required this.id,
@@ -18,6 +19,7 @@ class SshHost {
     this.port = 22,
     required this.username,
     this.authType = SshAuthType.password,
+    this.groupId,
   });
 
   Map<String, dynamic> toMap() => {
@@ -27,6 +29,7 @@ class SshHost {
     'port': port,
     'username': username,
     'authType': authType.name,
+    'groupId': groupId,
   };
 
   factory SshHost.fromMap(Map<dynamic, dynamic> map) => SshHost(
@@ -39,5 +42,6 @@ class SshHost {
       (e) => e.name == map['authType'],
       orElse: () => SshAuthType.password,
     ),
+    groupId: map['groupId'] as String?,
   );
 }

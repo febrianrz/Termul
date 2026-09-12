@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_ce/hive.dart';
 
+import '../models/host_group.dart';
 import '../models/ssh_host.dart';
 
 /// Stores host metadata in a local Hive box and secrets (password,
@@ -8,12 +9,15 @@ import '../models/ssh_host.dart';
 /// Keystore). Everything is local-only for now — no cloud sync.
 class HostRepository {
   static const _boxName = 'ssh_hosts';
+  static const _groupsBoxName = 'ssh_groups';
 
   final _secureStorage = const FlutterSecureStorage();
   late final Box _box;
+  late final Box _groupsBox;
 
   Future<void> init() async {
     _box = await Hive.openBox(_boxName);
+    _groupsBox = await Hive.openBox(_groupsBoxName);
   }
 
   List<SshHost> getAll() {
@@ -62,4 +66,26 @@ class HostRepository {
 
   Future<String?> getPassphrase(String id) =>
       _secureStorage.read(key: 'passphrase_$id');
+
+  List<HostGroup> getAllGroups() {
+    return _groupsBox.values
+        .map((e) => HostGroup.fromMap(Map<dynamic, dynamic>.from(e as Map)))
+        .toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  }
+
+  Future<void> saveGroup(HostGroup group) async {
+    await _groupsBox.put(group.id, group.toMap());
+  }
+
+  /// Deletes the group and un-assigns any hosts that belonged to it.
+  Future<void> deleteGroup(String id) async {
+    await _groupsBox.delete(id);
+    for (final host in getAll()) {
+      if (host.groupId == id) {
+        host.groupId = null;
+        await _box.put(host.id, host.toMap());
+      }
+    }
+  }
 }

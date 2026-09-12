@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../auth/auth_service.dart';
 import '../data/host_repository.dart';
+import '../models/host_group.dart';
 import '../models/ssh_host.dart';
 import 'host_edit_screen.dart';
+import 'host_group_screen.dart';
 import 'login_screen.dart';
 import 'terminal_screen.dart';
 
@@ -17,6 +19,7 @@ class HostListScreen extends StatefulWidget {
 
 class _HostListScreenState extends State<HostListScreen> {
   late List<SshHost> _hosts;
+  late List<HostGroup> _groups;
 
   @override
   void initState() {
@@ -25,14 +28,23 @@ class _HostListScreenState extends State<HostListScreen> {
   }
 
   void _reload() {
+    final repo = context.read<HostRepository>();
     setState(() {
-      _hosts = context.read<HostRepository>().getAll();
+      _hosts = repo.getAll();
+      _groups = repo.getAllGroups();
     });
   }
 
   Future<void> _openEditor({SshHost? host}) async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => HostEditScreen(host: host)),
+    );
+    _reload();
+  }
+
+  Future<void> _openGroups() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const HostGroupScreen()),
     );
     _reload();
   }
@@ -90,6 +102,74 @@ class _HostListScreenState extends State<HostListScreen> {
     );
   }
 
+  Widget _sectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Text(
+        title.toUpperCase(),
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _hostTile(SshHost host) {
+    return ListTile(
+      leading: const CircleAvatar(child: Icon(Icons.dns)),
+      title: Text(host.name),
+      subtitle: Text('${host.username}@${host.address}:${host.port}'),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => TerminalScreen(host: host)),
+      ),
+      trailing: PopupMenuButton<String>(
+        onSelected: (value) {
+          if (value == 'edit') _openEditor(host: host);
+          if (value == 'delete') _delete(host);
+        },
+        itemBuilder: (context) => const [
+          PopupMenuItem(value: 'edit', child: Text('Edit')),
+          PopupMenuItem(value: 'delete', child: Text('Hapus')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_hosts.isEmpty) {
+      return _EmptyState(onAdd: () => _openEditor());
+    }
+
+    if (_groups.isEmpty) {
+      return ListView.separated(
+        itemCount: _hosts.length,
+        separatorBuilder: (context, index) => const Divider(height: 1),
+        itemBuilder: (context, index) => _hostTile(_hosts[index]),
+      );
+    }
+
+    final byGroup = <String?, List<SshHost>>{};
+    for (final host in _hosts) {
+      byGroup.putIfAbsent(host.groupId, () => []).add(host);
+    }
+
+    final sections = <Widget>[];
+    for (final group in _groups) {
+      final hosts = byGroup[group.id];
+      if (hosts == null || hosts.isEmpty) continue;
+      sections.add(_sectionHeader(group.name));
+      sections.addAll(hosts.map(_hostTile));
+    }
+    final ungrouped = byGroup[null];
+    if (ungrouped != null && ungrouped.isNotEmpty) {
+      sections.add(_sectionHeader('Tanpa grup'));
+      sections.addAll(ungrouped.map(_hostTile));
+    }
+
+    return ListView(children: sections);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,41 +177,18 @@ class _HostListScreenState extends State<HostListScreen> {
         title: const Text('Termul'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.folder_outlined),
+            tooltip: 'Kelola Grup',
+            onPressed: _openGroups,
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
             onPressed: _logout,
           ),
         ],
       ),
-      body: _hosts.isEmpty
-          ? _EmptyState(onAdd: () => _openEditor())
-          : ListView.separated(
-              itemCount: _hosts.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final host = _hosts[index];
-                return ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.dns)),
-                  title: Text(host.name),
-                  subtitle: Text('${host.username}@${host.address}:${host.port}'),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => TerminalScreen(host: host),
-                    ),
-                  ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'edit') _openEditor(host: host);
-                      if (value == 'delete') _delete(host);
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      PopupMenuItem(value: 'delete', child: Text('Hapus')),
-                    ],
-                  ),
-                );
-              },
-            ),
+      body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openEditor(),
         child: const Icon(Icons.add),
