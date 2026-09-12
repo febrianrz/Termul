@@ -159,4 +159,23 @@ class AppStrings {
       _t('Belum ada shortcut', 'No shortcuts yet');
   String get deleteShortcutTitle =>
       _t('Hapus shortcut?', 'Delete shortcut?');
+
+  // ---------------------------------------------------------------------
+  // Terminal tabs
+  // ---------------------------------------------------------------------
+  String get terminalTitle => _t('Terminal', 'Terminal');
+  String get allHostsHaveOpenSession => _t(
+    'Semua host sudah punya sesi terbuka',
+    'All hosts already have an open session',
+  );
+  String get noActiveSessions =>
+      _t('Belum ada sesi terminal yang aktif', 'No active terminal sessions');
+  String get backToHostList => _t('Kembali ke daftar host', 'Back to host list');
+  String get newSession => _t('Sesi baru', 'New session');
+  String get reconnect => _t('Sambungkan ulang', 'Reconnect');
+  String connectFailed(String error) =>
+      _t('Gagal konek: $error', 'Connection failed: $error');
+  String get connectionLostReconnecting =>
+      _t('Koneksi terputus - menyambungkan ulang…', 'Connection lost - reconnecting…');
+  String get connectionLost => _t('Koneksi terputus', 'Connection lost');
 }

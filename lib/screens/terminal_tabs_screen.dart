@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:xterm/xterm.dart';
 
 import '../data/host_repository.dart';
+import '../l10n/app_strings.dart';
 import '../models/command_shortcut.dart';
 import '../models/ssh_host.dart';
 import '../session/session_manager.dart';
@@ -32,6 +33,7 @@ class TerminalTabsScreen extends StatefulWidget {
 
 class _TerminalTabsScreenState extends State<TerminalTabsScreen>
     with SingleTickerProviderStateMixin {
+  final AppStrings _s = AppStrings();
   TabController? _tabController;
   String? _activeHostId;
   int _controllerLength = -1;
@@ -103,7 +105,7 @@ class _TerminalTabsScreenState extends State<TerminalTabsScreen>
 
     if (available.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Semua host sudah punya sesi terbuka')),
+        SnackBar(content: Text(_s.allHostsHaveOpenSession)),
       );
       return;
     }
@@ -155,17 +157,17 @@ class _TerminalTabsScreenState extends State<TerminalTabsScreen>
 
     if (sessions.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Terminal')),
+        appBar: AppBar(title: Text(_s.terminalTitle)),
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Belum ada sesi terminal yang aktif'),
+              Text(_s.noActiveSessions),
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: () => Navigator.of(context).pop(),
                 icon: const Icon(Icons.arrow_back),
-                label: const Text('Kembali ke daftar host'),
+                label: Text(_s.backToHostList),
               ),
             ],
           ),
@@ -195,7 +197,7 @@ class _TerminalTabsScreenState extends State<TerminalTabsScreen>
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            tooltip: 'Sesi baru',
+            tooltip: _s.newSession,
             onPressed: _addSession,
           ),
           AnimatedBuilder(
@@ -212,7 +214,7 @@ class _TerminalTabsScreenState extends State<TerminalTabsScreen>
                   children: [
                     IconButton(
                       icon: const Icon(Icons.swap_horiz),
-                      tooltip: 'Port Forward',
+                      tooltip: _s.portForward,
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) =>
@@ -223,7 +225,7 @@ class _TerminalTabsScreenState extends State<TerminalTabsScreen>
                     if (active.state == TerminalConnectionState.connected)
                       IconButton(
                         icon: const Icon(Icons.bolt_outlined),
-                        tooltip: 'Jalankan Shortcut',
+                        tooltip: _s.runShortcut,
                         onPressed: () => _runShortcut(active),
                       ),
                     if (active.state == TerminalConnectionState.reconnecting)
@@ -239,7 +241,7 @@ class _TerminalTabsScreenState extends State<TerminalTabsScreen>
                         active.state == TerminalConnectionState.failed)
                       IconButton(
                         icon: const Icon(Icons.refresh),
-                        tooltip: 'Sambungkan ulang',
+                        tooltip: _s.reconnect,
                         onPressed: () =>
                             active.connect(context.read<HostRepository>()),
                       ),
@@ -349,6 +351,7 @@ class _SessionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings();
     return AnimatedBuilder(
       animation: session,
       builder: (context, _) {
@@ -369,7 +372,7 @@ class _SessionView extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Gagal konek: ${session.errorMessage ?? 'unknown error'}',
+                      s.connectFailed(session.errorMessage ?? s.unknownError),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -394,8 +397,8 @@ class _SessionView extends StatelessWidget {
                     ),
                     child: Text(
                       reconnecting
-                          ? 'Koneksi terputus - menyambungkan ulang…'
-                          : 'Koneksi terputus',
+                          ? s.connectionLostReconnecting
+                          : s.connectionLost,
                       style: const TextStyle(color: Colors.white),
                     ),
                   ),
