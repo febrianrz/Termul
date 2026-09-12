@@ -251,4 +251,19 @@ class AppStrings {
   String get sshGroups => _t('Grup SSH', 'SSH Groups');
   String get noGroupsYet => _t('Belum ada grup', 'No groups yet');
   String get addGroupTooltip => _t('Tambah grup', 'Add group');
+
+  // ---------------------------------------------------------------------
+  // Broadcast
+  // ---------------------------------------------------------------------
+  String sentToSessions(int count) =>
+      _t('Terkirim ke $count sesi', 'Sent to $count sessions');
+  String get broadcastCommand => _t('Broadcast Command', 'Broadcast Command');
+  String get pickFromShortcuts =>
+      _t('Pilih dari shortcut', 'Pick from shortcuts');
+  String get sendToWhichSessions =>
+      _t('Kirim ke sesi mana saja:', 'Send to which sessions:');
+  String get connected => _t('Terhubung', 'Connected');
+  String get notConnected => _t('Tidak terhubung', 'Not connected');
+  String sendToSessionsButton(int count) =>
+      _t('Kirim ke $count sesi', 'Send to $count sessions');
 }
