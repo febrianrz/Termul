@@ -300,4 +300,29 @@ class AppStrings {
   String get disconnected => _t('Terputus', 'Disconnected');
   String failedLabel(String error) => _t('Gagal: $error', 'Failed: $error');
   String get closeSession => _t('Tutup sesi', 'Close session');
+
+  // ---------------------------------------------------------------------
+  // Auth errors
+  // ---------------------------------------------------------------------
+  String get ssoNotConfigured => _t(
+    'SSO belum dikonfigurasi: SSO_CLIENT_ID kosong. '
+    'Build ulang dengan --dart-define=SSO_CLIENT_ID=... '
+    '(lihat README bagian "Forking").',
+    'SSO is not configured: SSO_CLIENT_ID is empty. '
+    'Rebuild with --dart-define=SSO_CLIENT_ID=... '
+    '(see the README\'s "Forking" section).',
+  );
+  String get loginCancelled => _t('Login dibatalkan', 'Login cancelled');
+  String get loginFailedNoCode => _t(
+    'Login gagal: kode otorisasi tidak diterima',
+    'Login failed: no authorization code received',
+  );
+  String get loginFailedStateMismatch => _t(
+    'Login gagal: state tidak cocok',
+    'Login failed: state mismatch',
+  );
+  String loginExchangeFailed(int statusCode) => _t(
+    'Gagal menukar kode login ($statusCode)',
+    'Failed to exchange login code ($statusCode)',
+  );
 }
