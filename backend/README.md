@@ -40,7 +40,7 @@ to your own registry instead (self-hosted, GHCR, etc.), set these in
 
 | Name | Type | Value |
 | --- | --- | --- |
-| `DOCKER_REGISTRY` | variable | your registry's host, e.g. `registry.example.com` (leave unset for Docker Hub) |
+| `DOCKER_REGISTRY` | secret | your registry's host, e.g. `registry.example.com` (leave unset/empty for Docker Hub) |
 | `DOCKER_USERNAME` | secret | your registry username |
 | `DOCKER_PASSWORD` | secret | your registry password or access token |
 

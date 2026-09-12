@@ -18,20 +18,20 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # DOCKER_REGISTRY is a repo *variable* (Settings -> Actions -> Variables).
-      # Leave it unset to push to Docker Hub; set it to your own registry's
-      # host (e.g. registry.example.com) to push there instead.
+      # DOCKER_REGISTRY is a repo secret (Settings -> Actions -> Secrets).
+      # Leave it unset/empty to push to Docker Hub; set it to your own
+      # registry's host (e.g. registry.example.com) to push there instead.
       - name: Log in to registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ vars.DOCKER_REGISTRY }}
+          registry: ${{ secrets.DOCKER_REGISTRY }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Compute image name
         id: image
         env:
-          REGISTRY: ${{ vars.DOCKER_REGISTRY }}
+          REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
           USERNAME: ${{ secrets.DOCKER_USERNAME }}
         run: |
           if [ -n "$REGISTRY" ]; then
