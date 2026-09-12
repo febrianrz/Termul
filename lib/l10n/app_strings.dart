@@ -178,4 +178,13 @@ class AppStrings {
   String get connectionLostReconnecting =>
       _t('Koneksi terputus - menyambungkan ulang…', 'Connection lost - reconnecting…');
   String get connectionLost => _t('Koneksi terputus', 'Connection lost');
+
+  // ---------------------------------------------------------------------
+  // Login
+  // ---------------------------------------------------------------------
+  String get loginOptionalSubtitle => _t(
+    'Login opsional — buat sync antar device nanti',
+    'Login optional — for cross-device sync later',
+  );
+  String get loginWithAlterOne => 'Login with Alter One';
 }
