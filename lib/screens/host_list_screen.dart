@@ -20,11 +20,18 @@ class HostListScreen extends StatefulWidget {
 class _HostListScreenState extends State<HostListScreen> {
   late List<SshHost> _hosts;
   late List<HostGroup> _groups;
+  bool _loggedIn = false;
 
   @override
   void initState() {
     super.initState();
     _reload();
+    _loadAuthStatus();
+  }
+
+  Future<void> _loadAuthStatus() async {
+    final loggedIn = await context.read<AuthService>().isLoggedIn();
+    if (mounted) setState(() => _loggedIn = loggedIn);
   }
 
   void _reload() {
@@ -74,6 +81,13 @@ class _HostListScreenState extends State<HostListScreen> {
     }
   }
 
+  Future<void> _login() async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+    if (result == true) _loadAuthStatus();
+  }
+
   Future<void> _logout() async {
     final auth = context.read<AuthService>();
     final confirmed = await showDialog<bool>(
@@ -95,11 +109,7 @@ class _HostListScreenState extends State<HostListScreen> {
     if (confirmed != true) return;
 
     await auth.logout();
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+    if (mounted) setState(() => _loggedIn = false);
   }
 
   Widget _sectionHeader(String title) {
@@ -181,11 +191,18 @@ class _HostListScreenState extends State<HostListScreen> {
             tooltip: 'Kelola Grup',
             onPressed: _openGroups,
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: _logout,
-          ),
+          if (_loggedIn)
+            IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: 'Logout',
+              onPressed: _logout,
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.login),
+              tooltip: 'Login with Alter One',
+              onPressed: _login,
+            ),
         ],
       ),
       body: _buildBody(),
