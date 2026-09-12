@@ -30,6 +30,36 @@ class TerminalSession extends ChangeNotifier {
   TerminalConnectionState state = TerminalConnectionState.connecting;
   String? errorMessage;
 
+  /// Whether the toolbar's Ctrl/Alt keys are armed, i.e. will modify the
+  /// next character typed instead of that character being sent as-is.
+  bool ctrlArmed = false;
+  bool altArmed = false;
+
+  void toggleCtrl() {
+    ctrlArmed = !ctrlArmed;
+    _notify();
+  }
+
+  void toggleAlt() {
+    altArmed = !altArmed;
+    _notify();
+  }
+
+  /// Applies an armed Ctrl/Alt modifier to the next typed character, then
+  /// disarms it - mirrors how a physical modifier key is held down for one
+  /// keystroke on a mobile "extra keys" toolbar.
+  void _handleTypedOutput(String data) {
+    if ((ctrlArmed || altArmed) && data.isNotEmpty) {
+      final ctrl = ctrlArmed;
+      final alt = altArmed;
+      ctrlArmed = false;
+      altArmed = false;
+      _notify();
+      if (terminal.charInput(data.runes.first, ctrl: ctrl, alt: alt)) return;
+    }
+    _sshSession?.write(utf8.encode(data));
+  }
+
   Future<void> connect(HostRepository repo) async {
     state = TerminalConnectionState.connecting;
     errorMessage = null;
@@ -37,7 +67,7 @@ class TerminalSession extends ChangeNotifier {
 
     if (!_wired) {
       _wired = true;
-      terminal.onOutput = (data) => _sshSession?.write(utf8.encode(data));
+      terminal.onOutput = _handleTypedOutput;
       terminal.onResize = (width, height, pixelWidth, pixelHeight) =>
           _sshSession?.resizeTerminal(width, height, pixelWidth, pixelHeight);
     }
@@ -101,6 +131,12 @@ class TerminalSession extends ChangeNotifier {
       errorMessage = e.toString();
       _notify();
     }
+  }
+
+  /// Writes [text] to the remote shell as if typed, e.g. to run a saved
+  /// command shortcut. No-op if not currently connected.
+  void sendInput(String text) {
+    _sshSession?.write(utf8.encode(text));
   }
 
   /// Closes the underlying SSH connection. Does not touch [terminal]'s

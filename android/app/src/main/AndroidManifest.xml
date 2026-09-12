@@ -55,5 +55,12 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Lets url_launcher find a browser to open the release page from
+             the in-app update checker (required for canLaunchUrl on
+             Android 11+ package visibility rules). -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
     </queries>
 </manifest>

@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../auth/auth_service.dart';
 import '../data/host_repository.dart';
 import '../models/host_group.dart';
 import '../models/ssh_host.dart';
+import '../services/update_checker.dart';
 import '../session/session_manager.dart';
 import 'host_edit_screen.dart';
 import 'host_group_screen.dart';
 import 'login_screen.dart';
 import 'qr_import_screen.dart';
 import 'session_switcher_screen.dart';
+import 'settings_screen.dart';
+import 'sftp_screen.dart';
+import 'shortcut_screen.dart';
 import 'terminal_screen.dart';
 
 class HostListScreen extends StatefulWidget {
@@ -24,12 +30,30 @@ class _HostListScreenState extends State<HostListScreen> {
   late List<SshHost> _hosts;
   late List<HostGroup> _groups;
   bool _loggedIn = false;
+  UpdateInfo? _updateInfo;
 
   @override
   void initState() {
     super.initState();
     _reload();
     _loadAuthStatus();
+    _checkForUpdate();
+  }
+
+  /// Best-effort, silent check so the app can flag a newer build without
+  /// the user having to dig into Settings. Failures (offline, rate-limited)
+  /// are ignored - this is not the only way to check, see Settings.
+  Future<void> _checkForUpdate() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final currentBuild = int.tryParse(info.buildNumber) ?? 0;
+      final latest = await UpdateChecker.fetchLatest();
+      if (mounted && latest != null && latest.buildNumber > currentBuild) {
+        setState(() => _updateInfo = latest);
+      }
+    } catch (_) {
+      // Ignore - Settings' manual "Cek Pembaruan" still works.
+    }
   }
 
   Future<void> _loadAuthStatus() async {
@@ -57,6 +81,18 @@ class _HostListScreenState extends State<HostListScreen> {
       MaterialPageRoute(builder: (_) => const HostGroupScreen()),
     );
     _reload();
+  }
+
+  void _openShortcuts() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ShortcutScreen()),
+    );
+  }
+
+  void _openSettings() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+    );
   }
 
   Future<void> _importFromMac() async {
@@ -128,6 +164,29 @@ class _HostListScreenState extends State<HostListScreen> {
     if (mounted) setState(() => _loggedIn = false);
   }
 
+  Widget _updateBanner(UpdateInfo info) {
+    return MaterialBanner(
+      leading: const Icon(Icons.system_update_outlined),
+      content: Text('Update tersedia (build ${info.buildNumber})'),
+      actions: [
+        TextButton(
+          onPressed: () => setState(() => _updateInfo = null),
+          child: const Text('Nanti'),
+        ),
+        FilledButton(
+          onPressed: () {
+            setState(() => _updateInfo = null);
+            launchUrl(
+              Uri.parse(info.releaseUrl),
+              mode: LaunchMode.externalApplication,
+            );
+          },
+          child: const Text('Buka'),
+        ),
+      ],
+    );
+  }
+
   Widget _sectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
@@ -151,10 +210,16 @@ class _HostListScreenState extends State<HostListScreen> {
       ),
       trailing: PopupMenuButton<String>(
         onSelected: (value) {
+          if (value == 'sftp') {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => SftpScreen(host: host)),
+            );
+          }
           if (value == 'edit') _openEditor(host: host);
           if (value == 'delete') _delete(host);
         },
         itemBuilder: (context) => const [
+          PopupMenuItem(value: 'sftp', child: Text('SFTP')),
           PopupMenuItem(value: 'edit', child: Text('Edit')),
           PopupMenuItem(value: 'delete', child: Text('Hapus')),
         ],
@@ -226,6 +291,16 @@ class _HostListScreenState extends State<HostListScreen> {
             tooltip: 'Kelola Grup',
             onPressed: _openGroups,
           ),
+          IconButton(
+            icon: const Icon(Icons.bolt_outlined),
+            tooltip: 'Kelola Shortcut',
+            onPressed: _openShortcuts,
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Pengaturan',
+            onPressed: _openSettings,
+          ),
           if (_loggedIn)
             IconButton(
               icon: const Icon(Icons.logout),
@@ -240,7 +315,12 @@ class _HostListScreenState extends State<HostListScreen> {
             ),
         ],
       ),
-      body: _buildBody(),
+      body: Column(
+        children: [
+          if (_updateInfo != null) _updateBanner(_updateInfo!),
+          Expanded(child: _buildBody()),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openEditor(),
         child: const Icon(Icons.add),

@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_ce/hive.dart';
 
+import '../models/command_shortcut.dart';
 import '../models/host_group.dart';
 import '../models/ssh_host.dart';
 
@@ -10,14 +11,17 @@ import '../models/ssh_host.dart';
 class HostRepository {
   static const _boxName = 'ssh_hosts';
   static const _groupsBoxName = 'ssh_groups';
+  static const _shortcutsBoxName = 'command_shortcuts';
 
   final _secureStorage = const FlutterSecureStorage();
   late final Box _box;
   late final Box _groupsBox;
+  late final Box _shortcutsBox;
 
   Future<void> init() async {
     _box = await Hive.openBox(_boxName);
     _groupsBox = await Hive.openBox(_groupsBoxName);
+    _shortcutsBox = await Hive.openBox(_shortcutsBoxName);
   }
 
   List<SshHost> getAll() {
@@ -87,5 +91,22 @@ class HostRepository {
         await _box.put(host.id, host.toMap());
       }
     }
+  }
+
+  List<CommandShortcut> getAllShortcuts() {
+    return _shortcutsBox.values
+        .map(
+          (e) => CommandShortcut.fromMap(Map<dynamic, dynamic>.from(e as Map)),
+        )
+        .toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  }
+
+  Future<void> saveShortcut(CommandShortcut shortcut) async {
+    await _shortcutsBox.put(shortcut.id, shortcut.toMap());
+  }
+
+  Future<void> deleteShortcut(String id) async {
+    await _shortcutsBox.delete(id);
   }
 }
