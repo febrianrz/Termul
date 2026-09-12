@@ -16,3 +16,11 @@
 
 # Android Keystore-backed crypto (used by flutter_secure_storage).
 -keep class androidx.security.crypto.** { *; }
+
+# Flutter's engine has optional support for Google Play "deferred
+# components" (dynamic feature delivery), which references
+# com.google.android.play:core classes. This app doesn't depend on that
+# library and doesn't use deferred components, so those classes are
+# genuinely absent from the build - without this, R8 hard-fails with
+# "missing classes" instead of just warning about an unused code path.
+-dontwarn com.google.android.play.core.**
