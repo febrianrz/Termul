@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/host_repository.dart';
+import '../l10n/app_strings.dart';
 import '../models/host_group.dart';
 import '../models/ssh_host.dart';
 import 'qr_scan_screen.dart';
@@ -27,6 +28,7 @@ class HostEditScreen extends StatefulWidget {
 }
 
 class _HostEditScreenState extends State<HostEditScreen> {
+  final AppStrings _s = AppStrings();
   final _formKey = GlobalKey<FormState>();
 
   late final _nameController = TextEditingController(
@@ -136,20 +138,20 @@ class _HostEditScreenState extends State<HostEditScreen> {
     final name = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Grup Baru'),
+        title: Text(_s.newGroup),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Nama grup'),
+          decoration: InputDecoration(labelText: _s.groupName),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Batal'),
+            child: Text(_s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('Simpan'),
+            child: Text(_s.save),
           ),
         ],
       ),
@@ -169,7 +171,9 @@ class _HostEditScreenState extends State<HostEditScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Host' : 'Tambah Host')),
+      appBar: AppBar(
+        title: Text(_isEditing ? _s.editHost : _s.addHostTitle),
+      ),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -177,29 +181,29 @@ class _HostEditScreenState extends State<HostEditScreen> {
           children: [
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Nama'),
+              decoration: InputDecoration(labelText: _s.shortcutName),
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                  (v == null || v.trim().isEmpty) ? _s.requiredField : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _addressController,
-              decoration: const InputDecoration(
-                labelText: 'Host / IP',
-                hintText: 'contoh: 192.168.1.10',
+              decoration: InputDecoration(
+                labelText: _s.hostAddressLabel,
+                hintText: _s.hostAddressHint,
               ),
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                  (v == null || v.trim().isEmpty) ? _s.requiredField : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _portController,
-              decoration: const InputDecoration(labelText: 'Port'),
+              decoration: InputDecoration(labelText: _s.port),
               keyboardType: TextInputType.number,
               validator: (v) {
                 final port = int.tryParse(v?.trim() ?? '');
                 if (port == null || port <= 0 || port > 65535) {
-                  return 'Port tidak valid';
+                  return _s.invalidPort;
                 }
                 return null;
               },
@@ -207,9 +211,9 @@ class _HostEditScreenState extends State<HostEditScreen> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Username'),
+              decoration: InputDecoration(labelText: _s.username),
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+                  (v == null || v.trim().isEmpty) ? _s.requiredField : null,
             ),
             const SizedBox(height: 12),
             Row(
@@ -218,12 +222,12 @@ class _HostEditScreenState extends State<HostEditScreen> {
                 Expanded(
                   child: DropdownButtonFormField<String?>(
                     initialValue: _groupId,
-                    decoration: const InputDecoration(
-                      labelText: 'Grup (opsional)',
+                    decoration: InputDecoration(
+                      labelText: _s.groupOptional,
                     ),
                     items: [
-                      const DropdownMenuItem<String?>(
-                        child: Text('Tanpa grup'),
+                      DropdownMenuItem<String?>(
+                        child: Text(_s.ungrouped),
                       ),
                       ..._groups.map(
                         (g) => DropdownMenuItem<String?>(
@@ -237,7 +241,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.create_new_folder_outlined),
-                  tooltip: 'Grup baru',
+                  tooltip: _s.newGroupTooltip,
                   onPressed: _addGroup,
                 ),
               ],
@@ -245,9 +249,9 @@ class _HostEditScreenState extends State<HostEditScreen> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _tagsController,
-              decoration: const InputDecoration(
-                labelText: 'Tag (opsional)',
-                hintText: 'contoh: production, database',
+              decoration: InputDecoration(
+                labelText: _s.tagsOptional,
+                hintText: _s.tagsHint,
               ),
             ),
             const SizedBox(height: 20),
@@ -272,11 +276,11 @@ class _HostEditScreenState extends State<HostEditScreen> {
               TextFormField(
                 controller: _passwordController,
                 decoration: InputDecoration(
-                  labelText: 'Password',
-                  hintText: _isEditing ? '(kosongkan jika tidak diubah)' : null,
+                  labelText: _s.password,
+                  hintText: _isEditing ? _s.leaveBlankToKeep : null,
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.qr_code_scanner),
-                    tooltip: 'Scan QR',
+                    tooltip: _s.scanQr,
                     onPressed: () => _scanQrInto(_passwordController),
                   ),
                 ),
@@ -286,13 +290,13 @@ class _HostEditScreenState extends State<HostEditScreen> {
               TextFormField(
                 controller: _privateKeyController,
                 decoration: InputDecoration(
-                  labelText: 'Private key (PEM)',
+                  labelText: _s.privateKeyLabel,
                   hintText: _isEditing
-                      ? '(kosongkan jika tidak diubah)'
+                      ? _s.leaveBlankToKeep
                       : '-----BEGIN OPENSSH PRIVATE KEY-----',
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.qr_code_scanner),
-                    tooltip: 'Scan QR',
+                    tooltip: _s.scanQr,
                     onPressed: () => _scanQrInto(_privateKeyController),
                   ),
                 ),
@@ -302,8 +306,8 @@ class _HostEditScreenState extends State<HostEditScreen> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _passphraseController,
-                decoration: const InputDecoration(
-                  labelText: 'Passphrase (opsional)',
+                decoration: InputDecoration(
+                  labelText: _s.passphraseOptional,
                 ),
                 obscureText: true,
               ),
@@ -317,7 +321,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Simpan'),
+                  : Text(_s.save),
             ),
           ],
         ),

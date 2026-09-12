@@ -212,4 +212,27 @@ class AppStrings {
     'scan the QR code it shows - usually one QR is enough for several hosts.',
   );
   String get scanQr => 'Scan QR';
+
+  // ---------------------------------------------------------------------
+  // Host edit
+  // ---------------------------------------------------------------------
+  String get editHost => _t('Edit Host', 'Edit Host');
+  String get addHostTitle => _t('Tambah Host', 'Add Host');
+  String get hostAddressLabel => _t('Host / IP', 'Host / IP');
+  String get hostAddressHint => _t('contoh: 192.168.1.10', 'e.g. 192.168.1.10');
+  String get port => 'Port';
+  String get username => 'Username';
+  String get groupOptional => _t('Grup (opsional)', 'Group (optional)');
+  String get newGroupTooltip => _t('Grup baru', 'New group');
+  String get tagsOptional => _t('Tag (opsional)', 'Tags (optional)');
+  String get tagsHint =>
+      _t('contoh: production, database', 'e.g. production, database');
+  String get password => 'Password';
+  String get privateKeyLabel => _t('Private key (PEM)', 'Private key (PEM)');
+  String get leaveBlankToKeep =>
+      _t('(kosongkan jika tidak diubah)', '(leave blank to keep unchanged)');
+  String get passphraseOptional =>
+      _t('Passphrase (opsional)', 'Passphrase (optional)');
+  String get newGroup => _t('Grup Baru', 'New Group');
+  String get groupName => _t('Nama grup', 'Group name');
 }
