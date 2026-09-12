@@ -1,6 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TerMul</title>
+<meta name="description" content="TerMul is a free, open-source SSH terminal client for Android. Real terminal emulation, password/private-key auth, QR-code credential import, and optional SSO login — no ads, no subscription.">
+<meta name="theme-color" content="#000000">
 <link rel="icon" type="image/jpeg" href="logo.jpg">
 <meta name="color-scheme" content="dark">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TerMul">
+<meta property="og:title" content="TerMul — SSH from your pocket. Secure. Free. No BS.">
+<meta property="og:description" content="A free, open-source SSH terminal client for Android — real terminal emulation, QR-code credential import, and optional SSO login. No ads, no subscription.">
+<meta property="og:image" content="logo.jpg">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="TerMul — SSH from your pocket. Secure. Free. No BS.">
+<meta name="twitter:description" content="Free, open-source SSH terminal client for Android with QR-code credential import and optional SSO login.">
+<meta name="twitter:image" content="logo.jpg">
+<!-- og:image/twitter:image resolve relative to this page's URL; once this
+     is live on a real domain, add og:url with the absolute page URL for
+     best compatibility with Facebook/WhatsApp/Twitter link previews. -->
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -56,6 +77,15 @@
     text-transform: uppercase;
     color: var(--ink-dim);
     font-weight: 500;
+  }
+
+  p code {
+    font-family: var(--mono);
+    font-size: 0.9em;
+    color: var(--ink);
+    background: var(--surface-2);
+    padding: 0.1em 0.4em;
+    border-radius: 5px;
   }
 
   /* ---------- nav ---------- */
@@ -252,7 +282,9 @@
     padding: 20px 20px 24px;
     color: #d8d8dc;
     line-height: 1.8;
+    overflow-x: auto;
   }
+  .term-body > div { white-space: pre; }
   .term-body .prompt { color: #ffffff; font-weight: 600; }
   .term-body .host { color: #9fb8ff; }
   .term-body .out { color: #7a7a83; }
@@ -398,6 +430,44 @@
     margin-top: 4px;
   }
 
+  /* ---------- copyable command ---------- */
+  .cmd-block {
+    background: #0a0a0a;
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+  }
+  .cmd-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .cmd-scroll {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+  }
+  .cmd-scroll code {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.86rem;
+    color: #d8d8dc;
+    white-space: pre;
+  }
+  .copy-btn {
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .copy-btn:hover { border-color: color-mix(in srgb, var(--ink) 50%, transparent); }
+
   /* ---------- footer ---------- */
   footer {
     border-top: 1px solid var(--line);
@@ -425,10 +495,25 @@
     .trust { grid-template-columns: 1fr; }
     .features { grid-template-columns: 1fr; }
     .nav-links .link { display: none; }
-    .log-row { flex-direction: column; gap: 4px; }
-    .log-row .what { min-width: 0; }
+    .log-row { flex-wrap: wrap; row-gap: 4px; }
+    .log-row .desc { flex-basis: 100%; }
+  }
+
+  @media (max-width: 480px) {
+    body { padding-inline: 16px; }
+    .hero { padding-block: 40px 32px; }
+    .hero .lede { max-width: none; }
+    .term { margin-top: 40px; border-radius: 12px; }
+    .term-body { padding: 16px 16px 20px; font-size: 0.78rem; }
+    section { padding-block: 44px; }
+    .trust-card, .feature { padding: 22px 20px; }
+    .statement { padding-block: 52px; }
+    .band { padding: 40px 22px; }
+    footer { justify-content: center; text-align: center; }
   }
 </style>
+</head>
+<body>
 
 <nav class="top">
   <div class="wrap">
@@ -560,6 +645,25 @@
   </section>
 
   <section class="divider">
+    <div class="section-head">
+      <p class="eyebrow">// sync from your mac</p>
+      <h2>Publish SSH keys straight from your terminal</h2>
+      <p>The <code>termul</code> agent reads your <code>~/.ssh/config</code>,
+      lets you pick which hosts to send, then shows one QR code per host —
+      scan it in the app. Nothing touches the network; the QR code is the
+      only thing that leaves your screen.</p>
+    </div>
+    <div class="cmd-block">
+      <div class="cmd-row">
+        <div class="cmd-scroll">
+          <code id="agent-cmd">curl -fsSL https://raw.githubusercontent.com/febrianrz/Termul/main/agent/install.sh | sh</code>
+        </div>
+        <button type="button" class="copy-btn" id="agent-copy-btn">Copy</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="divider">
     <div class="statement">
       <h2>Your passwords deserve better than a text file.</h2>
     </div>
@@ -627,3 +731,19 @@
     </div>
   </footer>
 </div>
+
+<script>
+  var copyBtn = document.getElementById('agent-copy-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function () {
+      var text = document.getElementById('agent-cmd').textContent;
+      navigator.clipboard.writeText(text).then(function () {
+        var original = copyBtn.textContent;
+        copyBtn.textContent = 'Copied!';
+        setTimeout(function () { copyBtn.textContent = original; }, 1500);
+      });
+    });
+  }
+</script>
+</body>
+</html>
