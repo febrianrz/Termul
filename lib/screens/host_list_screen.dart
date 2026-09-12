@@ -9,6 +9,7 @@ import '../models/host_group.dart';
 import '../models/ssh_host.dart';
 import '../services/update_checker.dart';
 import '../session/session_manager.dart';
+import '../session/terminal_session.dart';
 import 'host_edit_screen.dart';
 import 'host_group_screen.dart';
 import 'login_screen.dart';
@@ -253,7 +254,17 @@ class _HostListScreenState extends State<HostListScreen> {
 
   Widget _hostTile(SshHost host) {
     return ListTile(
-      leading: const CircleAvatar(child: Icon(Icons.dns)),
+      leading: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const CircleAvatar(child: Icon(Icons.dns)),
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: _HostSessionIndicator(hostId: host.id),
+          ),
+        ],
+      ),
       title: Text(host.name),
       subtitle: Text(
         host.tags.isEmpty
@@ -502,6 +513,51 @@ class _HostListScreenState extends State<HostListScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openEditor(),
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+/// Small colored dot on a host tile's avatar showing whether that host has
+/// a live [TerminalSession] right now, and roughly what state it's in -
+/// so an active connection is visible from the host list itself instead
+/// of only inside the session switcher.
+class _HostSessionIndicator extends StatelessWidget {
+  final String hostId;
+
+  const _HostSessionIndicator({required this.hostId});
+
+  Color _dotColor(TerminalConnectionState state) {
+    switch (state) {
+      case TerminalConnectionState.connected:
+        return Colors.green;
+      case TerminalConnectionState.connecting:
+      case TerminalConnectionState.reconnecting:
+        return Colors.orange;
+      case TerminalConnectionState.closed:
+      case TerminalConnectionState.failed:
+        return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = context.watch<SessionManager>().sessionForHost(hostId);
+    if (session == null) return const SizedBox.shrink();
+
+    return AnimatedBuilder(
+      animation: session,
+      builder: (context, _) => Container(
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(
+          color: _dotColor(session.state),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            width: 2,
+          ),
+        ),
       ),
     );
   }
