@@ -34,7 +34,7 @@ See [`backend/README.md`](backend/README.md).
 
 ## CI/CD
 
-- **`build-apk.yml`** — two jobs on every push: `build-android` builds the release APK and publishes it to the `latest` GitHub Release (the download link above); `build-ios` builds an unsigned iOS build to validate it compiles (no installable IPA yet - that needs an Apple Developer account, a signing certificate, and a provisioning profile, none of which are set up). Both need repository secret `SSO_CLIENT_ID`, plus optional repository **variables** `SSO_BASE_URL`, `SSO_REDIRECT_URI` and `BACKEND_BASE_URL` if you're not using this repo's defaults.
+- **`build-apk.yml`** — two jobs on every push: `build-android` builds the release APK and publishes it to the `latest` GitHub Release (the download link above); `build-ios` builds an unsigned iOS build to validate it compiles (no installable IPA yet - that needs an Apple Developer account, a signing certificate, and a provisioning profile, none of which are set up). Both need repository secret `ALTER_CLIENT_ID` (the SSO client ID, passed to the app as `--dart-define=SSO_CLIENT_ID`), plus optional repository **variables** `SSO_BASE_URL`, `SSO_REDIRECT_URI` and `BACKEND_BASE_URL` if you're not using this repo's defaults.
 - **`backend-docker.yml`** — builds `backend/`'s Docker image and pushes it whenever `backend/**` changes. Pushes to Docker Hub by default; see `backend/README.md` for pushing to your own registry instead. Needs repository secrets `DOCKER_USERNAME` and `DOCKER_PASSWORD` (a Docker Hub [access token](https://hub.docker.com/settings/security), not your password, if using Docker Hub).
 
 Add secrets/variables under **Settings → Secrets and variables → Actions**.
@@ -48,11 +48,17 @@ To point a fork at your own SSO client:
 1. Register a client with your SSO provider and note its `client_id` and `client_secret`.
 2. Pick your app's package/bundle ID (e.g. `com.yourcompany.yourapp`) and a redirect URI using it as the scheme, e.g. `com.yourcompany.yourapp://callback`.
 3. Update `android/app/build.gradle.kts` (`namespace` / `applicationId`) and the `CallbackActivity` intent-filter's `android:scheme` in `android/app/src/main/AndroidManifest.xml` to match your new scheme.
-4. Set these locally (`dart_define.json`) and in CI (repo secrets/variables):
+4. Set these locally in `dart_define.json` as-is:
    - `SSO_BASE_URL` — your SSO server's base URL
    - `SSO_CLIENT_ID` — your client ID
    - `SSO_REDIRECT_URI` — the redirect URI from step 2
    - `BACKEND_BASE_URL` — where you're running `backend/`
+
+   In CI, set repository **variables** `SSO_BASE_URL`, `SSO_REDIRECT_URI` and
+   `BACKEND_BASE_URL`, but the client ID goes in repository **secret**
+   `ALTER_CLIENT_ID` (see `build-apk.yml`, which maps it to
+   `--dart-define=SSO_CLIENT_ID` at build time) — rename that secret to
+   match your own provider if you'd rather it not say "alter".
 5. Set `SSO_CLIENT_ID`, `SSO_CLIENT_SECRET`, `SSO_BASE_URL` (if different) and `SSO_REDIRECT_URI` in the backend's `.env` (or as Docker Hub / host env vars) — see `backend/README.md`.
 
 No code changes needed beyond the Android package/scheme in steps 2–3.
