@@ -380,77 +380,102 @@ class _HostListScreenState extends State<HostListScreen> {
     return ListView(children: sections);
   }
 
+  Widget _menuRow(IconData icon, String label) {
+    return Row(
+      children: [
+        Icon(icon, size: 20),
+        const SizedBox(width: 12),
+        Text(label),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Termul'),
         actions: [
-          Consumer<SessionManager>(
-            builder: (context, manager, _) {
-              final count = manager.sessions.length;
-              return IconButton(
-                icon: Badge(
-                  isLabelVisible: count > 0,
-                  label: Text('$count'),
-                  child: const Icon(Icons.terminal),
-                ),
-                tooltip: 'Sesi Aktif',
-                onPressed: _openSessions,
-              );
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              if (value == 'sessions') _openSessions();
+              if (value == 'import_qr') _importFromMac();
+              if (value == 'groups') _openGroups();
+              if (value == 'shortcuts') _openShortcuts();
+              if (value == 'settings') _openSettings();
+              if (value == 'login') _login();
+              if (value == 'logout') _logout();
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner),
-            tooltip: 'Import dari Komputer',
-            onPressed: _importFromMac,
-          ),
-          IconButton(
-            icon: const Icon(Icons.folder_outlined),
-            tooltip: 'Kelola Grup',
-            onPressed: _openGroups,
-          ),
-          IconButton(
-            icon: const Icon(Icons.bolt_outlined),
-            tooltip: 'Kelola Shortcut',
-            onPressed: _openShortcuts,
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Pengaturan',
-            onPressed: _openSettings,
-          ),
-          if (_loggedIn)
-            PopupMenuButton<String>(
-              tooltip: _userDisplayName() ?? 'Akun',
-              icon: CircleAvatar(
-                radius: 14,
-                child: Text(
-                  _userInitials(),
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ),
-              onSelected: (value) {
-                if (value == 'logout') _logout();
-              },
-              itemBuilder: (context) => [
+            itemBuilder: (context) {
+              final sessionCount = context
+                  .read<SessionManager>()
+                  .sessions
+                  .length;
+              return [
                 PopupMenuItem<String>(
-                  enabled: false,
-                  child: Text(_userDisplayName() ?? 'Akun'),
+                  value: 'sessions',
+                  child: _menuRow(
+                    Icons.terminal,
+                    sessionCount > 0
+                        ? 'Sesi Aktif ($sessionCount)'
+                        : 'Sesi Aktif',
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'import_qr',
+                  child: _menuRow(
+                    Icons.qr_code_scanner,
+                    'Import dari Komputer',
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'groups',
+                  child: _menuRow(Icons.folder_outlined, 'Kelola Grup'),
+                ),
+                PopupMenuItem<String>(
+                  value: 'shortcuts',
+                  child: _menuRow(Icons.bolt_outlined, 'Kelola Shortcut'),
+                ),
+                PopupMenuItem<String>(
+                  value: 'settings',
+                  child: _menuRow(Icons.settings_outlined, 'Pengaturan'),
                 ),
                 const PopupMenuDivider(),
-                const PopupMenuItem<String>(
-                  value: 'logout',
-                  child: Text('Logout'),
-                ),
-              ],
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.login),
-              tooltip: 'Login with Alter One',
-              onPressed: _login,
-            ),
+                if (_loggedIn) ...[
+                  PopupMenuItem<String>(
+                    enabled: false,
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          child: Text(
+                            _userInitials(),
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _userDisplayName() ?? 'Akun',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'logout',
+                    child: _menuRow(Icons.logout, 'Logout'),
+                  ),
+                ] else
+                  PopupMenuItem<String>(
+                    value: 'login',
+                    child: _menuRow(Icons.login, 'Sign In Alter One'),
+                  ),
+              ];
+            },
+          ),
         ],
       ),
       body: Column(
