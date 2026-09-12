@@ -1,38 +1,38 @@
 # Termul
 
-SSH client / terminal multiplexer untuk Android (mirip Termius), dibangun dengan Flutter.
+SSH client / terminal multiplexer for Android (Termius-like), built with Flutter.
 
 ## Download
 
-[**⬇ Download APK terbaru**](https://github.com/febrianrz/Termul/releases/latest/download/app-release.apk)
+[**⬇ Download latest APK**](https://github.com/febrianrz/Termul/releases/latest/download/app-release.apk)
 
-APK dibuild otomatis oleh GitHub Actions setiap ada push, jadi link di atas selalu mengarah ke build terbaru. Riwayat build ada di tab [Actions](https://github.com/febrianrz/Termul/actions).
+The APK is built automatically by GitHub Actions on every push, so the link above always points to the latest build. Build history is in the [Actions](https://github.com/febrianrz/Termul/actions) tab.
 
-## Fitur
+## Features
 
-- Simpan banyak host SSH (nama, alamat, port, username, password atau private key)
-- Password/private key disimpan di secure storage perangkat (Keychain/Keystore), bukan plaintext
-- Terminal interaktif per host (xterm + dartssh2)
-- Login SSO lewat Alter Indonesia (OAuth2 Authorization Code Grant)
+- Save multiple SSH hosts (name, address, port, username, password or private key)
+- Passwords/private keys are stored in the device's secure storage (Keychain/Keystore), never in plaintext
+- Interactive terminal per host (xterm + dartssh2)
+- SSO login via Alter Indonesia (OAuth2 Authorization Code Grant)
 
-## Struktur proyek
+## Project structure
 
-- `lib/` — aplikasi Flutter (Android & iOS)
-- `backend/` — skeleton backend (Express + TypeScript) untuk fitur sync lintas device di masa depan, belum terhubung ke app
+- `lib/` — the Flutter app (Android & iOS)
+- `backend/` — backend skeleton (Express + TypeScript) for future cross-device sync, not yet wired into the app
 
-## Menjalankan secara lokal
+## Running locally
 
 ```bash
 flutter pub get
-cp dart_define.example.json dart_define.json   # isi ALTER_CLIENT_ID & ALTER_CLIENT_SECRET, jangan di-commit
+cp dart_define.example.json dart_define.json   # fill in ALTER_CLIENT_ID & ALTER_CLIENT_SECRET, never commit this file
 flutter run --dart-define-from-file=dart_define.json
 ```
 
-## Konfigurasi CI (build APK otomatis)
+## CI configuration (automatic APK builds)
 
-Workflow `.github/workflows/build-apk.yml` butuh dua repository secret supaya APK hasil build bisa login:
+The `.github/workflows/build-apk.yml` workflow needs two repository secrets so the built APK can actually log in:
 
 - `ALTER_CLIENT_ID`
 - `ALTER_CLIENT_SECRET`
 
-Tambahkan di **Settings → Secrets and variables → Actions → New repository secret**. Tanpa ini, APK tetap ter-build tapi fitur login SSO tidak akan berfungsi.
+Add them under **Settings → Secrets and variables → Actions → New repository secret**. Without these, the APK still builds, but SSO login won't work.
