@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-android:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,3 +56,32 @@ jobs:
           body: Automatically rebuilt from the latest push to ${{ github.ref_name }}.
           make_latest: true
           files: build/app/outputs/flutter-apk/app-release.apk
+
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Unsigned build: validates the app compiles for iOS. It does not
+      # produce an installable IPA - that needs an Apple Developer account,
+      # a signing certificate, and a provisioning profile (not set up yet).
+      - name: Build iOS (no code signing)
+        env:
+          SSO_CLIENT_ID: ${{ secrets.SSO_CLIENT_ID }}
+          SSO_BASE_URL: ${{ vars.SSO_BASE_URL }}
+          SSO_REDIRECT_URI: ${{ vars.SSO_REDIRECT_URI }}
+          BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
+        run: |
+          args=(--dart-define=SSO_CLIENT_ID="$SSO_CLIENT_ID")
+          [ -n "$SSO_BASE_URL" ] && args+=(--dart-define=SSO_BASE_URL="$SSO_BASE_URL")
+          [ -n "$SSO_REDIRECT_URI" ] && args+=(--dart-define=SSO_REDIRECT_URI="$SSO_REDIRECT_URI")
+          [ -n "$BACKEND_BASE_URL" ] && args+=(--dart-define=BACKEND_BASE_URL="$BACKEND_BASE_URL")
+          flutter build ios --release --no-codesign "${args[@]}"
