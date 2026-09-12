@@ -103,6 +103,12 @@ class TerminalSession extends ChangeNotifier {
     }
   }
 
+  /// Writes [text] to the remote shell as if typed, e.g. to run a saved
+  /// command shortcut. No-op if not currently connected.
+  void sendInput(String text) {
+    _sshSession?.write(utf8.encode(text));
+  }
+
   /// Closes the underlying SSH connection. Does not touch [terminal]'s
   /// scrollback, so a closed session can still be reviewed until the user
   /// removes it from [SessionManager] entirely.

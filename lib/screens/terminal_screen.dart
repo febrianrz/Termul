@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:xterm/xterm.dart';
 
 import '../data/host_repository.dart';
+import '../models/command_shortcut.dart';
 import '../models/ssh_host.dart';
 import '../session/session_manager.dart';
 import '../session/terminal_session.dart';
+import 'shortcut_screen.dart';
 
 /// Displays a [TerminalSession] for [host], resuming it if one is already
 /// running (see [SessionManager]) instead of always connecting fresh.
@@ -41,6 +43,17 @@ class _TerminalScreenState extends State<TerminalScreen> {
     Navigator.of(context).pop();
   }
 
+  Future<void> _runShortcut() async {
+    final shortcut = await Navigator.of(context).push<CommandShortcut>(
+      MaterialPageRoute(
+        builder: (_) => const ShortcutScreen(pickerMode: true),
+      ),
+    );
+    if (shortcut != null) {
+      _session.sendInput('${shortcut.command}\n');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -50,6 +63,12 @@ class _TerminalScreenState extends State<TerminalScreen> {
           appBar: AppBar(
             title: Text(widget.host.name),
             actions: [
+              if (_session.state == TerminalConnectionState.connected)
+                IconButton(
+                  icon: const Icon(Icons.bolt_outlined),
+                  tooltip: 'Jalankan Shortcut',
+                  onPressed: _runShortcut,
+                ),
               if (_session.state == TerminalConnectionState.closed ||
                   _session.state == TerminalConnectionState.failed)
                 IconButton(

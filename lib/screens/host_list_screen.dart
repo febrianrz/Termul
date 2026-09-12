@@ -11,6 +11,7 @@ import 'host_group_screen.dart';
 import 'login_screen.dart';
 import 'qr_import_screen.dart';
 import 'session_switcher_screen.dart';
+import 'shortcut_screen.dart';
 import 'terminal_screen.dart';
 
 class HostListScreen extends StatefulWidget {
@@ -57,6 +58,12 @@ class _HostListScreenState extends State<HostListScreen> {
       MaterialPageRoute(builder: (_) => const HostGroupScreen()),
     );
     _reload();
+  }
+
+  void _openShortcuts() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ShortcutScreen()),
+    );
   }
 
   Future<void> _importFromMac() async {
@@ -225,6 +232,11 @@ class _HostListScreenState extends State<HostListScreen> {
             icon: const Icon(Icons.folder_outlined),
             tooltip: 'Kelola Grup',
             onPressed: _openGroups,
+          ),
+          IconButton(
+            icon: const Icon(Icons.bolt_outlined),
+            tooltip: 'Kelola Shortcut',
+            onPressed: _openShortcuts,
           ),
           if (_loggedIn)
             IconButton(
