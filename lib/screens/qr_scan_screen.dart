@@ -1,0 +1,32 @@
+import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+
+/// Scans a QR code and pops the route with its raw text content.
+class QrScanScreen extends StatefulWidget {
+  const QrScanScreen({super.key});
+
+  @override
+  State<QrScanScreen> createState() => _QrScanScreenState();
+}
+
+class _QrScanScreenState extends State<QrScanScreen> {
+  bool _handled = false;
+
+  void _onDetect(BarcodeCapture capture) {
+    if (_handled || capture.barcodes.isEmpty) return;
+
+    final value = capture.barcodes.first.rawValue;
+    if (value == null || value.isEmpty) return;
+
+    _handled = true;
+    Navigator.of(context).pop(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Scan QR')),
+      body: MobileScanner(onDetect: _onDetect),
+    );
+  }
+}

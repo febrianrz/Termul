@@ -183,6 +183,13 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 controller: _terminalController,
                 autofocus: true,
                 readOnly: _state == _ConnectionState.closed,
+                // Disables the on-screen keyboard's autocorrect/word-suggestion
+                // composing behavior (default TextInputType.emailAddress still
+                // lets some keyboards, e.g. Gboard, batch keystrokes into a
+                // composing region before committing them) - without this,
+                // typed characters can land only after a whole word commits,
+                // making the terminal cursor appear to lag behind typing.
+                keyboardType: TextInputType.visiblePassword,
               ),
             ),
           ],

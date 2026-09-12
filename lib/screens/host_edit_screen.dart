@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../data/host_repository.dart';
 import '../models/ssh_host.dart';
+import 'qr_scan_screen.dart';
 
 class HostEditScreen extends StatefulWidget {
   final SshHost? host;
@@ -82,6 +83,15 @@ class _HostEditScreenState extends State<HostEditScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  Future<void> _scanQrInto(TextEditingController controller) async {
+    final result = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const QrScanScreen()),
+    );
+    if (result != null && result.isNotEmpty) {
+      setState(() => controller.text = result);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -151,6 +161,11 @@ class _HostEditScreenState extends State<HostEditScreen> {
                 decoration: InputDecoration(
                   labelText: 'Password',
                   hintText: _isEditing ? '(kosongkan jika tidak diubah)' : null,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.qr_code_scanner),
+                    tooltip: 'Scan QR',
+                    onPressed: () => _scanQrInto(_passwordController),
+                  ),
                 ),
                 obscureText: true,
               )
@@ -162,6 +177,11 @@ class _HostEditScreenState extends State<HostEditScreen> {
                   hintText: _isEditing
                       ? '(kosongkan jika tidak diubah)'
                       : '-----BEGIN OPENSSH PRIVATE KEY-----',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.qr_code_scanner),
+                    tooltip: 'Scan QR',
+                    onPressed: () => _scanQrInto(_privateKeyController),
+                  ),
                 ),
                 maxLines: 6,
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
