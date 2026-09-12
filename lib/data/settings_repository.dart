@@ -7,6 +7,7 @@ import '../theme/theme_preset.dart';
 class SettingsRepository {
   static const _boxName = 'app_settings';
   static const _themePresetKey = 'theme_preset';
+  static const _biometricLockKey = 'biometric_lock_enabled';
 
   late final Box _box;
 
@@ -24,5 +25,12 @@ class SettingsRepository {
 
   Future<void> setThemePreset(ThemePresetId id) async {
     await _box.put(_themePresetKey, id.name);
+  }
+
+  bool getBiometricLockEnabled() =>
+      _box.get(_biometricLockKey, defaultValue: false) as bool;
+
+  Future<void> setBiometricLockEnabled(bool enabled) async {
+    await _box.put(_biometricLockKey, enabled);
   }
 }

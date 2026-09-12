@@ -12,12 +12,13 @@ import '../session/session_manager.dart';
 import 'host_edit_screen.dart';
 import 'host_group_screen.dart';
 import 'login_screen.dart';
+import 'port_forward_screen.dart';
 import 'qr_import_screen.dart';
 import 'session_switcher_screen.dart';
 import 'settings_screen.dart';
 import 'sftp_screen.dart';
 import 'shortcut_screen.dart';
-import 'terminal_screen.dart';
+import 'terminal_tabs_screen.dart';
 
 class HostListScreen extends StatefulWidget {
   const HostListScreen({super.key});
@@ -32,6 +33,8 @@ class _HostListScreenState extends State<HostListScreen> {
   bool _loggedIn = false;
   Map<String, dynamic>? _user;
   UpdateInfo? _updateInfo;
+  String _searchQuery = '';
+  String? _selectedTag;
 
   @override
   void initState() {
@@ -245,9 +248,17 @@ class _HostListScreenState extends State<HostListScreen> {
     return ListTile(
       leading: const CircleAvatar(child: Icon(Icons.dns)),
       title: Text(host.name),
-      subtitle: Text('${host.username}@${host.address}:${host.port}'),
+      subtitle: Text(
+        host.tags.isEmpty
+            ? '${host.username}@${host.address}:${host.port}'
+            : '${host.username}@${host.address}:${host.port} · ${host.tags.join(', ')}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => TerminalScreen(host: host)),
+        MaterialPageRoute(
+          builder: (_) => TerminalTabsScreen(initialHost: host),
+        ),
       ),
       trailing: PopupMenuButton<String>(
         onSelected: (value) {
@@ -256,15 +267,79 @@ class _HostListScreenState extends State<HostListScreen> {
               MaterialPageRoute(builder: (_) => SftpScreen(host: host)),
             );
           }
+          if (value == 'forward') {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => PortForwardScreen(host: host)),
+            );
+          }
           if (value == 'edit') _openEditor(host: host);
           if (value == 'delete') _delete(host);
         },
         itemBuilder: (context) => const [
           PopupMenuItem(value: 'sftp', child: Text('SFTP')),
+          PopupMenuItem(value: 'forward', child: Text('Port Forward')),
           PopupMenuItem(value: 'edit', child: Text('Edit')),
           PopupMenuItem(value: 'delete', child: Text('Hapus')),
         ],
       ),
+    );
+  }
+
+  List<String> get _allTags =>
+      ({for (final h in _hosts) ...h.tags}.toList()..sort());
+
+  List<SshHost> get _filteredHosts => _hosts
+      .where((h) => h.matches(_searchQuery))
+      .where((h) => _selectedTag == null || h.tags.contains(_selectedTag))
+      .toList();
+
+  bool get _isFiltering => _searchQuery.isNotEmpty || _selectedTag != null;
+
+  Widget _searchAndTagBar() {
+    final tags = _allTags;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Cari host, alamat, atau tag…',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchQuery.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => setState(() => _searchQuery = ''),
+                    ),
+              isDense: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onChanged: (value) => setState(() => _searchQuery = value),
+          ),
+        ),
+        if (tags.isNotEmpty)
+          SizedBox(
+            height: 44,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              itemCount: tags.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final tag = tags[index];
+                final selected = _selectedTag == tag;
+                return ChoiceChip(
+                  label: Text(tag),
+                  selected: selected,
+                  onSelected: (value) =>
+                      setState(() => _selectedTag = value ? tag : null),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 
@@ -273,25 +348,30 @@ class _HostListScreenState extends State<HostListScreen> {
       return _EmptyState(onAdd: () => _openEditor());
     }
 
-    if (_groups.isEmpty) {
+    final hosts = _filteredHosts;
+    if (hosts.isEmpty) {
+      return const Center(child: Text('Tidak ada host yang cocok'));
+    }
+
+    if (_groups.isEmpty || _isFiltering) {
       return ListView.separated(
-        itemCount: _hosts.length,
+        itemCount: hosts.length,
         separatorBuilder: (context, index) => const Divider(height: 1),
-        itemBuilder: (context, index) => _hostTile(_hosts[index]),
+        itemBuilder: (context, index) => _hostTile(hosts[index]),
       );
     }
 
     final byGroup = <String?, List<SshHost>>{};
-    for (final host in _hosts) {
+    for (final host in hosts) {
       byGroup.putIfAbsent(host.groupId, () => []).add(host);
     }
 
     final sections = <Widget>[];
     for (final group in _groups) {
-      final hosts = byGroup[group.id];
-      if (hosts == null || hosts.isEmpty) continue;
+      final groupHosts = byGroup[group.id];
+      if (groupHosts == null || groupHosts.isEmpty) continue;
       sections.add(_sectionHeader(group.name));
-      sections.addAll(hosts.map(_hostTile));
+      sections.addAll(groupHosts.map(_hostTile));
     }
     final ungrouped = byGroup[null];
     if (ungrouped != null && ungrouped.isNotEmpty) {
@@ -302,82 +382,108 @@ class _HostListScreenState extends State<HostListScreen> {
     return ListView(children: sections);
   }
 
+  Widget _menuRow(IconData icon, String label) {
+    return Row(
+      children: [
+        Icon(icon, size: 20),
+        const SizedBox(width: 12),
+        Text(label),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Termul'),
         actions: [
-          Consumer<SessionManager>(
-            builder: (context, manager, _) {
-              final count = manager.sessions.length;
-              return IconButton(
-                icon: Badge(
-                  isLabelVisible: count > 0,
-                  label: Text('$count'),
-                  child: const Icon(Icons.terminal),
-                ),
-                tooltip: 'Sesi Aktif',
-                onPressed: _openSessions,
-              );
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              if (value == 'sessions') _openSessions();
+              if (value == 'import_qr') _importFromMac();
+              if (value == 'groups') _openGroups();
+              if (value == 'shortcuts') _openShortcuts();
+              if (value == 'settings') _openSettings();
+              if (value == 'login') _login();
+              if (value == 'logout') _logout();
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner),
-            tooltip: 'Import dari Komputer',
-            onPressed: _importFromMac,
-          ),
-          IconButton(
-            icon: const Icon(Icons.folder_outlined),
-            tooltip: 'Kelola Grup',
-            onPressed: _openGroups,
-          ),
-          IconButton(
-            icon: const Icon(Icons.bolt_outlined),
-            tooltip: 'Kelola Shortcut',
-            onPressed: _openShortcuts,
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Pengaturan',
-            onPressed: _openSettings,
-          ),
-          if (_loggedIn)
-            PopupMenuButton<String>(
-              tooltip: _userDisplayName() ?? 'Akun',
-              icon: CircleAvatar(
-                radius: 14,
-                child: Text(
-                  _userInitials(),
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ),
-              onSelected: (value) {
-                if (value == 'logout') _logout();
-              },
-              itemBuilder: (context) => [
+            itemBuilder: (context) {
+              final sessionCount = context
+                  .read<SessionManager>()
+                  .sessions
+                  .length;
+              return [
                 PopupMenuItem<String>(
-                  enabled: false,
-                  child: Text(_userDisplayName() ?? 'Akun'),
+                  value: 'sessions',
+                  child: _menuRow(
+                    Icons.terminal,
+                    sessionCount > 0
+                        ? 'Sesi Aktif ($sessionCount)'
+                        : 'Sesi Aktif',
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'import_qr',
+                  child: _menuRow(
+                    Icons.qr_code_scanner,
+                    'Import dari Komputer',
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'groups',
+                  child: _menuRow(Icons.folder_outlined, 'Kelola Grup'),
+                ),
+                PopupMenuItem<String>(
+                  value: 'shortcuts',
+                  child: _menuRow(Icons.bolt_outlined, 'Kelola Shortcut'),
+                ),
+                PopupMenuItem<String>(
+                  value: 'settings',
+                  child: _menuRow(Icons.settings_outlined, 'Pengaturan'),
                 ),
                 const PopupMenuDivider(),
-                const PopupMenuItem<String>(
-                  value: 'logout',
-                  child: Text('Logout'),
-                ),
-              ],
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.login),
-              tooltip: 'Login with Alter One',
-              onPressed: _login,
-            ),
+                if (_loggedIn) ...[
+                  PopupMenuItem<String>(
+                    enabled: false,
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          child: Text(
+                            _userInitials(),
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _userDisplayName() ?? 'Akun',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'logout',
+                    child: _menuRow(Icons.logout, 'Logout'),
+                  ),
+                ] else
+                  PopupMenuItem<String>(
+                    value: 'login',
+                    child: _menuRow(Icons.login, 'Sign In Alter One'),
+                  ),
+              ];
+            },
+          ),
         ],
       ),
       body: Column(
         children: [
           if (_updateInfo != null) _updateBanner(_updateInfo!),
+          if (_hosts.isNotEmpty) _searchAndTagBar(),
           Expanded(child: _buildBody()),
         ],
       ),
