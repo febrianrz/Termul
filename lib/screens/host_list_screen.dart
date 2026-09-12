@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../auth/auth_service.dart';
 import '../data/host_repository.dart';
 import '../models/host_group.dart';
 import '../models/ssh_host.dart';
+import '../services/update_checker.dart';
 import '../session/session_manager.dart';
 import 'host_edit_screen.dart';
 import 'host_group_screen.dart';
@@ -27,12 +30,30 @@ class _HostListScreenState extends State<HostListScreen> {
   late List<SshHost> _hosts;
   late List<HostGroup> _groups;
   bool _loggedIn = false;
+  UpdateInfo? _updateInfo;
 
   @override
   void initState() {
     super.initState();
     _reload();
     _loadAuthStatus();
+    _checkForUpdate();
+  }
+
+  /// Best-effort, silent check so the app can flag a newer build without
+  /// the user having to dig into Settings. Failures (offline, rate-limited)
+  /// are ignored - this is not the only way to check, see Settings.
+  Future<void> _checkForUpdate() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final currentBuild = int.tryParse(info.buildNumber) ?? 0;
+      final latest = await UpdateChecker.fetchLatest();
+      if (mounted && latest != null && latest.buildNumber > currentBuild) {
+        setState(() => _updateInfo = latest);
+      }
+    } catch (_) {
+      // Ignore - Settings' manual "Cek Pembaruan" still works.
+    }
   }
 
   Future<void> _loadAuthStatus() async {
@@ -141,6 +162,29 @@ class _HostListScreenState extends State<HostListScreen> {
 
     await auth.logout();
     if (mounted) setState(() => _loggedIn = false);
+  }
+
+  Widget _updateBanner(UpdateInfo info) {
+    return MaterialBanner(
+      leading: const Icon(Icons.system_update_outlined),
+      content: Text('Update tersedia (build ${info.buildNumber})'),
+      actions: [
+        TextButton(
+          onPressed: () => setState(() => _updateInfo = null),
+          child: const Text('Nanti'),
+        ),
+        FilledButton(
+          onPressed: () {
+            setState(() => _updateInfo = null);
+            launchUrl(
+              Uri.parse(info.releaseUrl),
+              mode: LaunchMode.externalApplication,
+            );
+          },
+          child: const Text('Buka'),
+        ),
+      ],
+    );
   }
 
   Widget _sectionHeader(String title) {
@@ -271,7 +315,12 @@ class _HostListScreenState extends State<HostListScreen> {
             ),
         ],
       ),
-      body: _buildBody(),
+      body: Column(
+        children: [
+          if (_updateInfo != null) _updateBanner(_updateInfo!),
+          Expanded(child: _buildBody()),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openEditor(),
         child: const Icon(Icons.add),

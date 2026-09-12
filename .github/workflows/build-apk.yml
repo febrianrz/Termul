@@ -64,7 +64,13 @@ jobs:
         with:
           tag_name: latest
           name: Latest build
-          body: Automatically rebuilt from the latest push to ${{ github.ref_name }}.
+          # The in-app update checker (lib/services/update_checker.dart)
+          # parses "(build N)" out of this body to compare against the
+          # installed app's own build number - keep that text if you edit
+          # this.
+          body: >-
+            Automatically rebuilt from the latest push to
+            ${{ github.ref_name }} (build ${{ github.run_number }}).
           make_latest: true
           files: build/app/outputs/flutter-apk/app-release.apk
 

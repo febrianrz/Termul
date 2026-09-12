@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../services/update_checker.dart';
 import '../theme/theme_controller.dart';
 import '../theme/theme_preset.dart';
 
@@ -28,6 +30,7 @@ class SettingsScreen extends StatelessWidget {
           const Divider(height: 32),
           const _SectionHeader('Tentang'),
           const _AppVersionTile(),
+          const _UpdateCheckTile(),
         ],
       ),
     );
@@ -106,6 +109,88 @@ class _AppVersionTile extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Manually checks GitHub Releases for a newer build than the one
+/// installed - there's no automatic background check, so this is the only
+/// way the app can tell the user a new build exists.
+class _UpdateCheckTile extends StatefulWidget {
+  const _UpdateCheckTile();
+
+  @override
+  State<_UpdateCheckTile> createState() => _UpdateCheckTileState();
+}
+
+class _UpdateCheckTileState extends State<_UpdateCheckTile> {
+  bool _checking = false;
+
+  Future<void> _check() async {
+    setState(() => _checking = true);
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final currentBuild = int.tryParse(info.buildNumber) ?? 0;
+      final latest = await UpdateChecker.fetchLatest();
+
+      if (!mounted) return;
+      if (latest == null) {
+        _showMessage('Tidak bisa mengecek pembaruan. Coba lagi nanti.');
+      } else if (latest.buildNumber > currentBuild) {
+        _showUpdateDialog(latest);
+      } else {
+        _showMessage('Sudah versi terbaru (build $currentBuild).');
+      }
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showUpdateDialog(UpdateInfo info) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Update tersedia'),
+        content: Text('Build ${info.buildNumber} sudah tersedia di GitHub.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Nanti'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              launchUrl(
+                Uri.parse(info.releaseUrl),
+                mode: LaunchMode.externalApplication,
+              );
+            },
+            child: const Text('Buka'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.system_update_outlined),
+      title: const Text('Cek Pembaruan'),
+      trailing: _checking
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : null,
+      onTap: _checking ? null : _check,
     );
   }
 }

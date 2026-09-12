@@ -56,6 +56,8 @@ dependencies:
   # save downloads into.
   file_picker: ^9.2.3
   path_provider: ^2.1.5
+  # Opens the GitHub release page from the in-app update checker.
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
