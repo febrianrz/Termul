@@ -21,7 +21,7 @@ import 'settings_screen.dart';
 import 'sftp_screen.dart';
 import 'shortcut_screen.dart';
 import 'terminal_tabs_screen.dart';
-import 'web_shortcut_screen.dart';
+import 'web_shortcuts_tab.dart';
 
 class HostListScreen extends StatefulWidget {
   const HostListScreen({super.key});
@@ -30,7 +30,8 @@ class HostListScreen extends StatefulWidget {
   State<HostListScreen> createState() => _HostListScreenState();
 }
 
-class _HostListScreenState extends State<HostListScreen> {
+class _HostListScreenState extends State<HostListScreen>
+    with SingleTickerProviderStateMixin {
   late List<SshHost> _hosts;
   late List<HostGroup> _groups;
   bool _loggedIn = false;
@@ -39,13 +40,21 @@ class _HostListScreenState extends State<HostListScreen> {
   String _searchQuery = '';
   String? _selectedTag;
   final AppStrings _s = AppStrings();
+  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _reload();
     _loadAuthStatus();
     _checkForUpdate();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   /// Best-effort, silent check so the app can flag a newer build without
@@ -122,12 +131,6 @@ class _HostListScreenState extends State<HostListScreen> {
   void _openShortcuts() {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const ShortcutScreen()),
-    );
-  }
-
-  void _openWebShortcuts() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const WebShortcutScreen()),
     );
   }
 
@@ -412,11 +415,40 @@ class _HostListScreenState extends State<HostListScreen> {
     );
   }
 
+  Widget _sshTab() {
+    return Stack(
+      children: [
+        Column(
+          children: [
+            if (_updateInfo != null) _updateBanner(_updateInfo!),
+            if (_hosts.isNotEmpty) _searchAndTagBar(),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            onPressed: () => _openEditor(),
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Termul'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(icon: const Icon(Icons.dns_outlined), text: _s.sshTab),
+            Tab(icon: const Icon(Icons.apps_outlined), text: _s.webShortcuts),
+          ],
+        ),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -425,7 +457,6 @@ class _HostListScreenState extends State<HostListScreen> {
               if (value == 'import_qr') _importFromMac();
               if (value == 'groups') _openGroups();
               if (value == 'shortcuts') _openShortcuts();
-              if (value == 'web_shortcuts') _openWebShortcuts();
               if (value == 'settings') _openSettings();
               if (value == 'login') _login();
               if (value == 'logout') _logout();
@@ -459,10 +490,6 @@ class _HostListScreenState extends State<HostListScreen> {
                 PopupMenuItem<String>(
                   value: 'shortcuts',
                   child: _menuRow(Icons.bolt_outlined, _s.commandShortcuts),
-                ),
-                PopupMenuItem<String>(
-                  value: 'web_shortcuts',
-                  child: _menuRow(Icons.apps_outlined, _s.webShortcuts),
                 ),
                 PopupMenuItem<String>(
                   value: 'settings',
@@ -505,16 +532,9 @@ class _HostListScreenState extends State<HostListScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          if (_updateInfo != null) _updateBanner(_updateInfo!),
-          if (_hosts.isNotEmpty) _searchAndTagBar(),
-          Expanded(child: _buildBody()),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openEditor(),
-        child: const Icon(Icons.add),
+      body: TabBarView(
+        controller: _tabController,
+        children: [_sshTab(), const WebShortcutsTab()],
       ),
     );
   }

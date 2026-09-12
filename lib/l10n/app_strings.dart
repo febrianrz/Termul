@@ -86,6 +86,11 @@ class AppStrings {
     'Shortcut "$name" akan dihapus.',
     'Shortcut "$name" will be deleted.',
   );
+  String get searchShortcutsHint =>
+      _t('Cari shortcut atau URL…', 'Search shortcuts or URL…');
+  String get noMatchingShortcuts =>
+      _t('Tidak ada shortcut yang cocok', 'No shortcuts match');
+  String get sshTab => 'SSH';
 
   // ---------------------------------------------------------------------
   // Settings

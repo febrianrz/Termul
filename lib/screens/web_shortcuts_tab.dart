@@ -10,16 +10,25 @@ import '../services/favicon_fetcher.dart';
 
 /// Launcher-style grid of saved web links (dashboards, admin panels, ...) -
 /// tap an icon to open it, instead of typing/remembering the URL.
-class WebShortcutScreen extends StatefulWidget {
-  const WebShortcutScreen({super.key});
+///
+/// Embedded directly as one of [HostListScreen]'s tabs (alongside the SSH
+/// host list) rather than pushed as its own screen, so it owns its own
+/// search bar and floating action button instead of relying on a Scaffold.
+class WebShortcutsTab extends StatefulWidget {
+  const WebShortcutsTab({super.key});
 
   @override
-  State<WebShortcutScreen> createState() => _WebShortcutScreenState();
+  State<WebShortcutsTab> createState() => _WebShortcutsTabState();
 }
 
-class _WebShortcutScreenState extends State<WebShortcutScreen> {
+class _WebShortcutsTabState extends State<WebShortcutsTab>
+    with AutomaticKeepAliveClientMixin {
   final AppStrings _s = AppStrings();
   late List<WebShortcut> _shortcuts;
+  String _searchQuery = '';
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -32,6 +41,8 @@ class _WebShortcutScreenState extends State<WebShortcutScreen> {
       _shortcuts = context.read<HostRepository>().getAllWebShortcuts();
     });
   }
+
+  Future<void> addShortcut() => _addOrEdit();
 
   Future<void> _addOrEdit({WebShortcut? shortcut}) async {
     final repo = context.read<HostRepository>();
@@ -179,34 +190,77 @@ class _WebShortcutScreenState extends State<WebShortcutScreen> {
     );
   }
 
+  Widget _searchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: _s.searchShortcutsHint,
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchQuery.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () => setState(() => _searchQuery = ''),
+                ),
+          isDense: true,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        onChanged: (value) => setState(() => _searchQuery = value),
+      ),
+    );
+  }
+
+  Widget _body() {
+    if (_shortcuts.isEmpty) {
+      return Center(child: Text(_s.noShortcutsYet));
+    }
+
+    final filtered = _shortcuts.where((s) => s.matches(_searchQuery)).toList();
+    if (filtered.isEmpty) {
+      return Center(child: Text(_s.noMatchingShortcuts));
+    }
+
+    final favorites = filtered.where((s) => s.favorite).toList();
+    final others = filtered.where((s) => !s.favorite).toList();
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (favorites.isNotEmpty) ...[
+          _sectionLabel(_s.favorites),
+          _grid(favorites),
+          const SizedBox(height: 20),
+        ],
+        if (others.isNotEmpty) ...[
+          if (favorites.isNotEmpty) _sectionLabel(_s.allShortcuts),
+          _grid(others),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final favorites = _shortcuts.where((s) => s.favorite).toList();
-    final others = _shortcuts.where((s) => !s.favorite).toList();
-
-    return Scaffold(
-      appBar: AppBar(title: Text(_s.webShortcutTitle)),
-      body: _shortcuts.isEmpty
-          ? Center(child: Text(_s.noShortcutsYet))
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                if (favorites.isNotEmpty) ...[
-                  _sectionLabel(_s.favorites),
-                  _grid(favorites),
-                  const SizedBox(height: 20),
-                ],
-                if (others.isNotEmpty) ...[
-                  if (favorites.isNotEmpty) _sectionLabel(_s.allShortcuts),
-                  _grid(others),
-                ],
-              ],
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _addOrEdit(),
-        tooltip: _s.addShortcutTooltip,
-        child: const Icon(Icons.add),
-      ),
+    super.build(context);
+    return Stack(
+      children: [
+        Column(
+          children: [
+            if (_shortcuts.isNotEmpty) _searchBar(),
+            Expanded(child: _body()),
+          ],
+        ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            onPressed: () => _addOrEdit(),
+            tooltip: _s.addShortcutTooltip,
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
     );
   }
 }

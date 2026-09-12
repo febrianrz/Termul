@@ -34,4 +34,11 @@ class WebShortcut {
     favorite: map['favorite'] as bool? ?? false,
     favicon: map['favicon'] as Uint8List?,
   );
+
+  /// Whether [query] matches this shortcut's name or URL (case-insensitive).
+  bool matches(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return name.toLowerCase().contains(q) || url.toLowerCase().contains(q);
+  }
 }
