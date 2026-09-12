@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../auth/app_lock_controller.dart';
 import '../services/update_checker.dart';
 import '../theme/theme_controller.dart';
 import '../theme/theme_preset.dart';
@@ -13,6 +14,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<ThemeController>();
+    final lock = context.watch<AppLockController>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Pengaturan')),
@@ -27,6 +29,17 @@ class SettingsScreen extends StatelessWidget {
               title: Text(preset.label),
               secondary: _ThemeSwatch(preset: preset),
             ),
+          const Divider(height: 32),
+          const _SectionHeader('Keamanan'),
+          SwitchListTile(
+            secondary: const Icon(Icons.fingerprint),
+            title: const Text('Kunci dengan biometrik'),
+            subtitle: const Text(
+              'Minta sidik jari/PIN perangkat setiap kali membuka Termul',
+            ),
+            value: lock.enabled,
+            onChanged: (value) => lock.setEnabled(value),
+          ),
           const Divider(height: 32),
           const _SectionHeader('Tentang'),
           const _AppVersionTile(),

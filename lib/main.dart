@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import 'package:provider/provider.dart';
 
+import 'auth/app_lock_controller.dart';
 import 'auth/auth_service.dart';
 import 'data/host_repository.dart';
 import 'data/settings_repository.dart';
 import 'screens/host_list_screen.dart';
+import 'screens/lock_screen.dart';
 import 'session/session_manager.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
@@ -50,6 +52,9 @@ class TermulApp extends StatelessWidget {
         ChangeNotifierProvider<ThemeController>(
           create: (_) => ThemeController(settingsRepository),
         ),
+        ChangeNotifierProvider<AppLockController>(
+          create: (_) => AppLockController(settingsRepository),
+        ),
       ],
       child: const _AppView(),
     );
@@ -65,13 +70,14 @@ class _AppView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final seedColor = context.watch<ThemeController>().preset.seedColor;
+    final locked = context.watch<AppLockController>().locked;
     return MaterialApp(
       title: 'Termul',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark(seedColor),
       darkTheme: AppTheme.dark(seedColor),
       themeMode: ThemeMode.dark,
-      home: const HostListScreen(),
+      home: locked ? const LockScreen() : const HostListScreen(),
     );
   }
 }

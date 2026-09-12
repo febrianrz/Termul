@@ -11,6 +11,7 @@ class SshHost {
   String username;
   SshAuthType authType;
   String? groupId;
+  List<String> tags;
 
   SshHost({
     required this.id,
@@ -20,7 +21,8 @@ class SshHost {
     required this.username,
     this.authType = SshAuthType.password,
     this.groupId,
-  });
+    List<String>? tags,
+  }) : tags = tags ?? [];
 
   Map<String, dynamic> toMap() => {
     'id': id,
@@ -30,6 +32,7 @@ class SshHost {
     'username': username,
     'authType': authType.name,
     'groupId': groupId,
+    'tags': tags,
   };
 
   factory SshHost.fromMap(Map<dynamic, dynamic> map) => SshHost(
@@ -43,5 +46,17 @@ class SshHost {
       orElse: () => SshAuthType.password,
     ),
     groupId: map['groupId'] as String?,
+    tags: (map['tags'] as List?)?.cast<String>() ?? const [],
   );
+
+  /// Whether [query] matches this host's name, address, username or any tag
+  /// (case-insensitive). Used by the host list's search box.
+  bool matches(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return name.toLowerCase().contains(q) ||
+        address.toLowerCase().contains(q) ||
+        username.toLowerCase().contains(q) ||
+        tags.any((t) => t.toLowerCase().contains(q));
+  }
 }

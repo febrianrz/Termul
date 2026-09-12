@@ -64,6 +64,8 @@ dependencies:
   path_provider: ^2.1.5
   # Opens the GitHub release page from the in-app update checker.
   url_launcher: ^6.3.2
+  # Biometric/device-credential app lock (Settings > "Kunci dengan biometrik").
+  local_auth: ^2.3.0
 
 dev_dependencies:
   flutter_test:

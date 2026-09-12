@@ -12,6 +12,7 @@ import '../session/session_manager.dart';
 import 'host_edit_screen.dart';
 import 'host_group_screen.dart';
 import 'login_screen.dart';
+import 'port_forward_screen.dart';
 import 'qr_import_screen.dart';
 import 'session_switcher_screen.dart';
 import 'settings_screen.dart';
@@ -32,6 +33,8 @@ class _HostListScreenState extends State<HostListScreen> {
   bool _loggedIn = false;
   Map<String, dynamic>? _user;
   UpdateInfo? _updateInfo;
+  String _searchQuery = '';
+  String? _selectedTag;
 
   @override
   void initState() {
@@ -245,7 +248,13 @@ class _HostListScreenState extends State<HostListScreen> {
     return ListTile(
       leading: const CircleAvatar(child: Icon(Icons.dns)),
       title: Text(host.name),
-      subtitle: Text('${host.username}@${host.address}:${host.port}'),
+      subtitle: Text(
+        host.tags.isEmpty
+            ? '${host.username}@${host.address}:${host.port}'
+            : '${host.username}@${host.address}:${host.port} · ${host.tags.join(', ')}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => TerminalScreen(host: host)),
       ),
@@ -256,15 +265,79 @@ class _HostListScreenState extends State<HostListScreen> {
               MaterialPageRoute(builder: (_) => SftpScreen(host: host)),
             );
           }
+          if (value == 'forward') {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => PortForwardScreen(host: host)),
+            );
+          }
           if (value == 'edit') _openEditor(host: host);
           if (value == 'delete') _delete(host);
         },
         itemBuilder: (context) => const [
           PopupMenuItem(value: 'sftp', child: Text('SFTP')),
+          PopupMenuItem(value: 'forward', child: Text('Port Forward')),
           PopupMenuItem(value: 'edit', child: Text('Edit')),
           PopupMenuItem(value: 'delete', child: Text('Hapus')),
         ],
       ),
+    );
+  }
+
+  List<String> get _allTags =>
+      ({for (final h in _hosts) ...h.tags}.toList()..sort());
+
+  List<SshHost> get _filteredHosts => _hosts
+      .where((h) => h.matches(_searchQuery))
+      .where((h) => _selectedTag == null || h.tags.contains(_selectedTag))
+      .toList();
+
+  bool get _isFiltering => _searchQuery.isNotEmpty || _selectedTag != null;
+
+  Widget _searchAndTagBar() {
+    final tags = _allTags;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Cari host, alamat, atau tag…',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchQuery.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => setState(() => _searchQuery = ''),
+                    ),
+              isDense: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onChanged: (value) => setState(() => _searchQuery = value),
+          ),
+        ),
+        if (tags.isNotEmpty)
+          SizedBox(
+            height: 44,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              itemCount: tags.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final tag = tags[index];
+                final selected = _selectedTag == tag;
+                return ChoiceChip(
+                  label: Text(tag),
+                  selected: selected,
+                  onSelected: (value) =>
+                      setState(() => _selectedTag = value ? tag : null),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 
@@ -273,25 +346,30 @@ class _HostListScreenState extends State<HostListScreen> {
       return _EmptyState(onAdd: () => _openEditor());
     }
 
-    if (_groups.isEmpty) {
+    final hosts = _filteredHosts;
+    if (hosts.isEmpty) {
+      return const Center(child: Text('Tidak ada host yang cocok'));
+    }
+
+    if (_groups.isEmpty || _isFiltering) {
       return ListView.separated(
-        itemCount: _hosts.length,
+        itemCount: hosts.length,
         separatorBuilder: (context, index) => const Divider(height: 1),
-        itemBuilder: (context, index) => _hostTile(_hosts[index]),
+        itemBuilder: (context, index) => _hostTile(hosts[index]),
       );
     }
 
     final byGroup = <String?, List<SshHost>>{};
-    for (final host in _hosts) {
+    for (final host in hosts) {
       byGroup.putIfAbsent(host.groupId, () => []).add(host);
     }
 
     final sections = <Widget>[];
     for (final group in _groups) {
-      final hosts = byGroup[group.id];
-      if (hosts == null || hosts.isEmpty) continue;
+      final groupHosts = byGroup[group.id];
+      if (groupHosts == null || groupHosts.isEmpty) continue;
       sections.add(_sectionHeader(group.name));
-      sections.addAll(hosts.map(_hostTile));
+      sections.addAll(groupHosts.map(_hostTile));
     }
     final ungrouped = byGroup[null];
     if (ungrouped != null && ungrouped.isNotEmpty) {
@@ -378,6 +456,7 @@ class _HostListScreenState extends State<HostListScreen> {
       body: Column(
         children: [
           if (_updateInfo != null) _updateBanner(_updateInfo!),
+          if (_hosts.isNotEmpty) _searchAndTagBar(),
           Expanded(child: _buildBody()),
         ],
       ),

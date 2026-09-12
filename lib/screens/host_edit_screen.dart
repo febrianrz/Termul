@@ -46,6 +46,9 @@ class _HostEditScreenState extends State<HostEditScreen> {
     text: widget.prefillPrivateKey,
   );
   final _passphraseController = TextEditingController();
+  late final _tagsController = TextEditingController(
+    text: (widget.host?.tags ?? const <String>[]).join(', '),
+  );
 
   late SshAuthType _authType =
       widget.host?.authType ??
@@ -71,6 +74,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
     _passwordController.dispose();
     _privateKeyController.dispose();
     _passphraseController.dispose();
+    _tagsController.dispose();
     super.dispose();
   }
 
@@ -88,6 +92,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
       username: _usernameController.text.trim(),
       authType: _authType,
       groupId: _groupId,
+      tags: _parseTags(),
     );
 
     await repo.save(
@@ -108,6 +113,13 @@ class _HostEditScreenState extends State<HostEditScreen> {
 
     if (mounted) Navigator.of(context).pop();
   }
+
+  List<String> _parseTags() => _tagsController.text
+      .split(',')
+      .map((t) => t.trim())
+      .where((t) => t.isNotEmpty)
+      .toSet()
+      .toList();
 
   Future<void> _scanQrInto(TextEditingController controller) async {
     final result = await Navigator.of(context).push<String>(
@@ -229,6 +241,14 @@ class _HostEditScreenState extends State<HostEditScreen> {
                   onPressed: _addGroup,
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _tagsController,
+              decoration: const InputDecoration(
+                labelText: 'Tag (opsional)',
+                hintText: 'contoh: production, database',
+              ),
             ),
             const SizedBox(height: 20),
             SegmentedButton<SshAuthType>(

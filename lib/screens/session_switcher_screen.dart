@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../session/session_manager.dart';
 import '../session/terminal_session.dart';
+import 'broadcast_screen.dart';
 import 'terminal_screen.dart';
 
 /// Lists every SSH session currently tracked by [SessionManager] - running
@@ -16,7 +17,19 @@ class SessionSwitcherScreen extends StatelessWidget {
     final sessions = context.watch<SessionManager>().sessions;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Sesi Aktif')),
+      appBar: AppBar(
+        title: const Text('Sesi Aktif'),
+        actions: [
+          if (sessions.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.campaign_outlined),
+              tooltip: 'Broadcast Command',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const BroadcastScreen()),
+              ),
+            ),
+        ],
+      ),
       body: sessions.isEmpty
           ? const Center(child: Text('Belum ada sesi terminal yang aktif'))
           : ListView.separated(
@@ -40,6 +53,7 @@ class _SessionTile extends StatelessWidget {
       case TerminalConnectionState.connected:
         return Colors.green;
       case TerminalConnectionState.connecting:
+      case TerminalConnectionState.reconnecting:
         return Colors.orange;
       case TerminalConnectionState.closed:
       case TerminalConnectionState.failed:
@@ -51,6 +65,8 @@ class _SessionTile extends StatelessWidget {
     switch (session.state) {
       case TerminalConnectionState.connecting:
         return 'Menyambungkan…';
+      case TerminalConnectionState.reconnecting:
+        return 'Menyambungkan ulang…';
       case TerminalConnectionState.connected:
         return 'Terhubung';
       case TerminalConnectionState.closed:

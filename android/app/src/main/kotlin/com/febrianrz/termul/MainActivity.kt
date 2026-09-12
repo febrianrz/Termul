@@ -1,5 +1,7 @@
 package com.febrianrz.termul
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// FlutterFragmentActivity (not plain FlutterActivity) is required by the
+// local_auth plugin, which shows the biometric prompt as a DialogFragment.
+class MainActivity : FlutterFragmentActivity()

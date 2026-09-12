@@ -9,6 +9,7 @@ import '../session/session_manager.dart';
 import '../session/terminal_session.dart';
 import '../theme/theme_controller.dart';
 import '../widgets/terminal_toolbar.dart';
+import 'port_forward_screen.dart';
 import 'shortcut_screen.dart';
 
 /// Displays a [TerminalSession] for [host], resuming it if one is already
@@ -65,11 +66,29 @@ class _TerminalScreenState extends State<TerminalScreen> {
           appBar: AppBar(
             title: Text(widget.host.name),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.swap_horiz),
+                tooltip: 'Port Forward',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PortForwardScreen(host: widget.host),
+                  ),
+                ),
+              ),
               if (_session.state == TerminalConnectionState.connected)
                 IconButton(
                   icon: const Icon(Icons.bolt_outlined),
                   tooltip: 'Jalankan Shortcut',
                   onPressed: _runShortcut,
+                ),
+              if (_session.state == TerminalConnectionState.reconnecting)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
                 ),
               if (_session.state == TerminalConnectionState.closed ||
                   _session.state == TerminalConnectionState.failed)
@@ -114,10 +133,13 @@ class _TerminalScreenState extends State<TerminalScreen> {
         );
       case TerminalConnectionState.connected:
       case TerminalConnectionState.closed:
+      case TerminalConnectionState.reconnecting:
         final closed = _session.state == TerminalConnectionState.closed;
+        final reconnecting =
+            _session.state == TerminalConnectionState.reconnecting;
         return Column(
           children: [
-            if (closed)
+            if (closed || reconnecting)
               Container(
                 width: double.infinity,
                 color: Colors.orange.shade800,
@@ -125,9 +147,11 @@ class _TerminalScreenState extends State<TerminalScreen> {
                   horizontal: 12,
                   vertical: 6,
                 ),
-                child: const Text(
-                  'Koneksi terputus',
-                  style: TextStyle(color: Colors.white),
+                child: Text(
+                  reconnecting
+                      ? 'Koneksi terputus - menyambungkan ulang…'
+                      : 'Koneksi terputus',
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
             Expanded(
@@ -135,7 +159,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 _session.terminal,
                 controller: _session.terminalController,
                 autofocus: true,
-                readOnly: closed,
+                readOnly: closed || reconnecting,
                 theme: context.watch<ThemeController>().preset.terminalTheme,
                 // Disables the on-screen keyboard's autocorrect/word-suggestion
                 // composing behavior (default TextInputType.emailAddress still
@@ -146,7 +170,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 keyboardType: TextInputType.visiblePassword,
               ),
             ),
-            if (!closed) TerminalToolbar(session: _session),
+            if (!closed && !reconnecting) TerminalToolbar(session: _session),
           ],
         );
     }
