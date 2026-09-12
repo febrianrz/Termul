@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../auth/auth_service.dart';
 import '../data/host_repository.dart';
 import '../models/ssh_host.dart';
 import 'host_edit_screen.dart';
+import 'login_screen.dart';
 import 'terminal_screen.dart';
 
 class HostListScreen extends StatefulWidget {
@@ -60,10 +62,47 @@ class _HostListScreenState extends State<HostListScreen> {
     }
   }
 
+  Future<void> _logout() async {
+    final auth = context.read<AuthService>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await auth.logout();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Termul')),
+      appBar: AppBar(
+        title: const Text('Termul'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: _logout,
+          ),
+        ],
+      ),
       body: _hosts.isEmpty
           ? _EmptyState(onAdd: () => _openEditor())
           : ListView.separated(
