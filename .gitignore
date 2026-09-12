@@ -48,4 +48,4 @@ app.*.map.json
 .widget_preview/
 
 # SSO credentials - never commit real client_secret
-/lib/config/sso_config.dart
+/dart_define.json

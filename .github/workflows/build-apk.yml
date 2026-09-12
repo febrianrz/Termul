@@ -6,6 +6,9 @@ on:
       - "**"
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,11 +29,26 @@ jobs:
         run: flutter pub get
 
       - name: Build release APK
-        run: flutter build apk --release
+        env:
+          ALTER_CLIENT_ID: ${{ secrets.ALTER_CLIENT_ID }}
+          ALTER_CLIENT_SECRET: ${{ secrets.ALTER_CLIENT_SECRET }}
+        run: |
+          flutter build apk --release \
+            --dart-define=ALTER_CLIENT_ID="$ALTER_CLIENT_ID" \
+            --dart-define=ALTER_CLIENT_SECRET="$ALTER_CLIENT_SECRET"
 
-      - name: Upload APK
+      - name: Upload APK (build artifact)
         uses: actions/upload-artifact@v4
         with:
           name: termul-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
+
+      - name: Publish latest APK release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest build
+          body: Automatically rebuilt from the latest push to ${{ github.ref_name }}.
+          make_latest: true
+          files: build/app/outputs/flutter-apk/app-release.apk

@@ -1,17 +1,38 @@
-# termul
+# Termul
 
-A new Flutter project.
+SSH client / terminal multiplexer untuk Android (mirip Termius), dibangun dengan Flutter.
 
-## Getting Started
+## Download
 
-This project is a starting point for a Flutter application.
+[**⬇ Download APK terbaru**](https://github.com/febrianrz/Termul/releases/latest/download/app-release.apk)
 
-A few resources to get you started if this is your first Flutter project:
+APK dibuild otomatis oleh GitHub Actions setiap ada push, jadi link di atas selalu mengarah ke build terbaru. Riwayat build ada di tab [Actions](https://github.com/febrianrz/Termul/actions).
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Fitur
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Simpan banyak host SSH (nama, alamat, port, username, password atau private key)
+- Password/private key disimpan di secure storage perangkat (Keychain/Keystore), bukan plaintext
+- Terminal interaktif per host (xterm + dartssh2)
+- Login SSO lewat Alter Indonesia (OAuth2 Authorization Code Grant)
+
+## Struktur proyek
+
+- `lib/` — aplikasi Flutter (Android & iOS)
+- `backend/` — skeleton backend (Express + TypeScript) untuk fitur sync lintas device di masa depan, belum terhubung ke app
+
+## Menjalankan secara lokal
+
+```bash
+flutter pub get
+cp dart_define.example.json dart_define.json   # isi ALTER_CLIENT_ID & ALTER_CLIENT_SECRET, jangan di-commit
+flutter run --dart-define-from-file=dart_define.json
+```
+
+## Konfigurasi CI (build APK otomatis)
+
+Workflow `.github/workflows/build-apk.yml` butuh dua repository secret supaya APK hasil build bisa login:
+
+- `ALTER_CLIENT_ID`
+- `ALTER_CLIENT_SECRET`
+
+Tambahkan di **Settings → Secrets and variables → Actions → New repository secret**. Tanpa ini, APK tetap ter-build tapi fitur login SSO tidak akan berfungsi.
