@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../data/host_repository.dart';
+import '../l10n/app_strings.dart';
 import '../models/ssh_host.dart';
 import '../session/sftp_session.dart';
 
@@ -24,6 +25,7 @@ class SftpScreen extends StatefulWidget {
 }
 
 class _SftpScreenState extends State<SftpScreen> {
+  final AppStrings _s = AppStrings();
   late final SftpSession _session;
 
   @override
@@ -40,26 +42,29 @@ class _SftpScreenState extends State<SftpScreen> {
   }
 
   Future<void> _mkdir() async {
-    final name = await _promptName(title: 'Folder Baru', label: 'Nama folder');
+    final name = await _promptName(
+      title: _s.newFolder,
+      label: _s.folderName,
+    );
     if (name == null || name.isEmpty) return;
     try {
       await _session.mkdir(name);
     } catch (e) {
-      _showError('Gagal membuat folder: $e');
+      _showError(_s.failedToCreateFolder(e));
     }
   }
 
   Future<void> _rename(SftpName entry) async {
     final name = await _promptName(
-      title: 'Rename',
-      label: 'Nama baru',
+      title: _s.rename,
+      label: _s.newName,
       initialValue: entry.filename,
     );
     if (name == null || name.isEmpty || name == entry.filename) return;
     try {
       await _session.rename(entry, name);
     } catch (e) {
-      _showError('Gagal rename: $e');
+      _showError(_s.failedToRename(e));
     }
   }
 
@@ -67,16 +72,16 @@ class _SftpScreenState extends State<SftpScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus?'),
-        content: Text('"${entry.filename}" akan dihapus.'),
+        title: Text(_s.confirmDeleteTitle),
+        content: Text(_s.deleteEntryBody(entry.filename)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
+            child: Text(_s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Hapus'),
+            child: Text(_s.delete),
           ),
         ],
       ),
@@ -85,7 +90,7 @@ class _SftpScreenState extends State<SftpScreen> {
     try {
       await _session.delete(entry);
     } catch (e) {
-      _showError('Gagal menghapus: $e');
+      _showError(_s.failedToDelete(e));
     }
   }
 
@@ -99,13 +104,13 @@ class _SftpScreenState extends State<SftpScreen> {
 
     try {
       await _runWithProgress(
-        label: 'Mengunggah ${picked.name}',
+        label: _s.uploading(picked.name),
         totalBytes: totalBytes,
         task: (onProgress) =>
             _session.upload(localFile, picked.name, onProgress: onProgress),
       );
     } catch (e) {
-      _showError('Gagal mengunggah: $e');
+      _showError(_s.failedToUpload(e));
     }
   }
 
@@ -115,7 +120,7 @@ class _SftpScreenState extends State<SftpScreen> {
       final localFile = File('${dir.path}/${entry.filename}');
 
       await _runWithProgress(
-        label: 'Mengunduh ${entry.filename}',
+        label: _s.downloading(entry.filename),
         totalBytes: entry.attr.size,
         task: (onProgress) =>
             _session.download(entry, localFile, onProgress: onProgress),
@@ -123,10 +128,10 @@ class _SftpScreenState extends State<SftpScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tersimpan di ${localFile.path}')),
+        SnackBar(content: Text(_s.savedAt(localFile.path))),
       );
     } catch (e) {
-      _showError('Gagal mengunduh: $e');
+      _showError(_s.failedToDownload(e));
     }
   }
 
@@ -160,11 +165,11 @@ class _SftpScreenState extends State<SftpScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Batal'),
+            child: Text(_s.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('Simpan'),
+            child: Text(_s.save),
           ),
         ],
       ),
@@ -234,22 +239,22 @@ class _SftpScreenState extends State<SftpScreen> {
               if (_session.state == SftpConnectionState.connected) ...[
                 IconButton(
                   icon: const Icon(Icons.drive_folder_upload_outlined),
-                  tooltip: 'Naik satu folder',
+                  tooltip: _s.goUpFolder,
                   onPressed: _session.canGoUp ? _session.goUp : null,
                 ),
                 IconButton(
                   icon: const Icon(Icons.create_new_folder_outlined),
-                  tooltip: 'Folder baru',
+                  tooltip: _s.newFolderTooltip,
                   onPressed: _mkdir,
                 ),
                 IconButton(
                   icon: const Icon(Icons.upload_file_outlined),
-                  tooltip: 'Upload',
+                  tooltip: _s.upload,
                   onPressed: _upload,
                 ),
                 IconButton(
                   icon: const Icon(Icons.refresh),
-                  tooltip: 'Muat ulang',
+                  tooltip: _s.reload,
                   onPressed: _session.refresh,
                 ),
               ],
@@ -275,14 +280,16 @@ class _SftpScreenState extends State<SftpScreen> {
                 const Icon(Icons.error_outline, color: Colors.red, size: 48),
                 const SizedBox(height: 12),
                 Text(
-                  'Gagal konek SFTP: ${_session.errorMessage ?? 'unknown error'}',
+                  _s.sftpConnectFailed(
+                    _session.errorMessage ?? _s.unknownError,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: () =>
                       _session.connect(context.read<HostRepository>()),
-                  child: const Text('Coba lagi'),
+                  child: Text(_s.tryAgain),
                 ),
               ],
             ),
@@ -290,7 +297,7 @@ class _SftpScreenState extends State<SftpScreen> {
         );
       case SftpConnectionState.connected:
         if (_session.entries.isEmpty) {
-          return const Center(child: Text('Folder kosong'));
+          return Center(child: Text(_s.emptyFolder));
         }
         return ListView.separated(
           itemCount: _session.entries.length,
@@ -319,9 +326,9 @@ class _SftpScreenState extends State<SftpScreen> {
         },
         itemBuilder: (context) => [
           if (!isDir)
-            const PopupMenuItem(value: 'download', child: Text('Download')),
-          const PopupMenuItem(value: 'rename', child: Text('Rename')),
-          const PopupMenuItem(value: 'delete', child: Text('Hapus')),
+            PopupMenuItem(value: 'download', child: Text(_s.download)),
+          PopupMenuItem(value: 'rename', child: Text(_s.rename)),
+          PopupMenuItem(value: 'delete', child: Text(_s.delete)),
         ],
       ),
     );

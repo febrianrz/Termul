@@ -117,4 +117,35 @@ class AppStrings {
     'Build $build sudah tersedia di GitHub.',
     'Build $build is available on GitHub.',
   );
+
+  // ---------------------------------------------------------------------
+  // SFTP
+  // ---------------------------------------------------------------------
+  String get newFolder => _t('Folder Baru', 'New Folder');
+  String get folderName => _t('Nama folder', 'Folder name');
+  String get newName => _t('Nama baru', 'New name');
+  String failedToCreateFolder(Object error) =>
+      _t('Gagal membuat folder: $error', 'Failed to create folder: $error');
+  String failedToRename(Object error) =>
+      _t('Gagal rename: $error', 'Failed to rename: $error');
+  String deleteEntryBody(String name) =>
+      _t('"$name" akan dihapus.', '"$name" will be deleted.');
+  String failedToDelete(Object error) =>
+      _t('Gagal menghapus: $error', 'Failed to delete: $error');
+  String uploading(String name) => _t('Mengunggah $name', 'Uploading $name');
+  String failedToUpload(Object error) =>
+      _t('Gagal mengunggah: $error', 'Failed to upload: $error');
+  String downloading(String name) => _t('Mengunduh $name', 'Downloading $name');
+  String savedAt(String path) => _t('Tersimpan di $path', 'Saved to $path');
+  String failedToDownload(Object error) =>
+      _t('Gagal mengunduh: $error', 'Failed to download: $error');
+  String get goUpFolder => _t('Naik satu folder', 'Go up one folder');
+  String get newFolderTooltip => _t('Folder baru', 'New folder');
+  String get upload => 'Upload';
+  String get reload => _t('Muat ulang', 'Reload');
+  String sftpConnectFailed(String error) =>
+      _t('Gagal konek SFTP: $error', 'SFTP connection failed: $error');
+  String get unknownError => _t('kesalahan tidak diketahui', 'unknown error');
+  String get emptyFolder => _t('Folder kosong', 'Empty folder');
+  String get download => 'Download';
 }
