@@ -4,9 +4,12 @@ SSH client / terminal multiplexer for Android (Termius-like), built with Flutter
 
 ## Download
 
-[**⬇ Download latest APK**](https://github.com/febrianrz/Termul/releases/latest/download/app-release.apk)
+[**⬇ Download latest APK**](https://github.com/febrianrz/Termul/releases/latest/download/app-arm64-v8a-release.apk)
+(works on virtually every phone from 2019 onward; on an older 32-bit
+device, grab `app-armeabi-v7a-release.apk` from the
+[releases page](https://github.com/febrianrz/Termul/releases/latest) instead)
 
-The APK is built automatically by GitHub Actions on every push, so the link above always points to the latest build. Build history is in the [Actions](https://github.com/febrianrz/Termul/actions) tab.
+The APK is built automatically by GitHub Actions on every push, so the link above always points to the latest build. It's split per CPU architecture to keep the download small (~20-30MB instead of a ~75MB universal APK) — less likely to stall on a slow connection. Build history is in the [Actions](https://github.com/febrianrz/Termul/actions) tab.
 
 ## Features
 

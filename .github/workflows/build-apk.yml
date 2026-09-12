@@ -39,13 +39,18 @@ jobs:
           [ -n "$SSO_BASE_URL" ] && args+=(--dart-define=SSO_BASE_URL="$SSO_BASE_URL")
           [ -n "$SSO_REDIRECT_URI" ] && args+=(--dart-define=SSO_REDIRECT_URI="$SSO_REDIRECT_URI")
           [ -n "$BACKEND_BASE_URL" ] && args+=(--dart-define=BACKEND_BASE_URL="$BACKEND_BASE_URL")
-          flutter build apk --release "${args[@]}"
+          # --split-per-abi: a single "fat" APK bundles native libs for every
+          # CPU architecture (~75MB), which is slow to download on mobile
+          # data and more prone to stalling mid-download. Splitting produces
+          # one APK per architecture (~20-30MB each) - almost every real
+          # phone downloads the arm64-v8a one.
+          flutter build apk --release --split-per-abi "${args[@]}"
 
-      - name: Upload APK (build artifact)
+      - name: Upload APKs (build artifact)
         uses: actions/upload-artifact@v4
         with:
           name: termul-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/*.apk
           retention-days: 30
 
       - name: Publish latest APK release
@@ -53,9 +58,12 @@ jobs:
         with:
           tag_name: latest
           name: Latest build
-          body: Automatically rebuilt from the latest push to ${{ github.ref_name }}.
+          body: >
+            Automatically rebuilt from the latest push to ${{ github.ref_name }}.
+            Most phones (2019+) should download app-arm64-v8a-release.apk.
+            Older 32-bit devices need app-armeabi-v7a-release.apk instead.
           make_latest: true
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: build/app/outputs/flutter-apk/*.apk
 
   build-ios:
     runs-on: macos-latest
