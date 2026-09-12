@@ -1,15 +1,16 @@
-import 'dart:convert';
-
-import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:xterm/xterm.dart';
 
 import '../data/host_repository.dart';
 import '../models/ssh_host.dart';
+import '../session/session_manager.dart';
+import '../session/terminal_session.dart';
 
-enum _ConnectionState { connecting, connected, closed, failed }
-
+/// Displays a [TerminalSession] for [host], resuming it if one is already
+/// running (see [SessionManager]) instead of always connecting fresh.
+/// Popping this screen does not disconnect - the session keeps running in
+/// the background until closed explicitly (here or from the switcher).
 class TerminalScreen extends StatefulWidget {
   final SshHost host;
 
@@ -20,130 +21,60 @@ class TerminalScreen extends StatefulWidget {
 }
 
 class _TerminalScreenState extends State<TerminalScreen> {
-  final _terminal = Terminal(maxLines: 10000);
-  final _terminalController = TerminalController();
-
-  SSHClient? _client;
-  SSHSession? _session;
-  _ConnectionState _state = _ConnectionState.connecting;
-  String? _errorMessage;
+  late final TerminalSession _session;
 
   @override
   void initState() {
     super.initState();
-    _terminal.onOutput = (data) {
-      _session?.write(utf8.encode(data));
-    };
-    _terminal.onResize = (width, height, pixelWidth, pixelHeight) {
-      _session?.resizeTerminal(width, height, pixelWidth, pixelHeight);
-    };
-    _connect();
+    _session = context.read<SessionManager>().open(
+      widget.host,
+      context.read<HostRepository>(),
+    );
   }
 
-  Future<void> _connect() async {
-    final repo = context.read<HostRepository>();
-    final host = widget.host;
-
-    try {
-      final socket = await SSHSocket.connect(
-        host.address,
-        host.port,
-        timeout: const Duration(seconds: 15),
-      );
-
-      List<SSHKeyPair>? identities;
-      if (host.authType == SshAuthType.privateKey) {
-        final pem = await repo.getPrivateKey(host.id);
-        if (pem == null || pem.isEmpty) {
-          throw Exception('Private key belum diisi untuk host ini');
-        }
-        final passphrase = await repo.getPassphrase(host.id);
-        identities = SSHKeyPair.fromPem(
-          pem,
-          (passphrase != null && passphrase.isNotEmpty) ? passphrase : null,
-        );
-      }
-
-      final client = SSHClient(
-        socket,
-        username: host.username,
-        onPasswordRequest: host.authType == SshAuthType.password
-            ? () => repo.getPassword(host.id)
-            : null,
-        identities: identities,
-      );
-      _client = client;
-
-      await client.authenticated;
-
-      final session = await client.shell(
-        pty: SSHPtyConfig(
-          width: _terminal.viewWidth,
-          height: _terminal.viewHeight,
-        ),
-      );
-      _session = session;
-
-      session.stdout.listen((data) {
-        _terminal.write(utf8.decode(data, allowMalformed: true));
-      });
-      session.stderr.listen((data) {
-        _terminal.write(utf8.decode(data, allowMalformed: true));
-      });
-
-      if (!mounted) return;
-      setState(() => _state = _ConnectionState.connected);
-
-      session.done.then((_) {
-        if (!mounted) return;
-        setState(() => _state = _ConnectionState.closed);
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _state = _ConnectionState.failed;
-        _errorMessage = e.toString();
-      });
-    }
+  void _reconnect() {
+    _session.connect(context.read<HostRepository>());
   }
 
-  @override
-  void dispose() {
-    _session?.close();
-    _client?.close();
-    super.dispose();
+  void _disconnect() {
+    context.read<SessionManager>().closeSession(widget.host.id);
+    Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.host.name),
-        actions: [
-          if (_state == _ConnectionState.closed ||
-              _state == _ConnectionState.failed)
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Sambungkan ulang',
-              onPressed: () {
-                setState(() {
-                  _state = _ConnectionState.connecting;
-                  _errorMessage = null;
-                });
-                _connect();
-              },
-            ),
-        ],
-      ),
-      body: _buildBody(),
+    return AnimatedBuilder(
+      animation: _session,
+      builder: (context, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(widget.host.name),
+            actions: [
+              if (_session.state == TerminalConnectionState.closed ||
+                  _session.state == TerminalConnectionState.failed)
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  tooltip: 'Sambungkan ulang',
+                  onPressed: _reconnect,
+                ),
+              IconButton(
+                icon: const Icon(Icons.link_off),
+                tooltip: 'Disconnect',
+                onPressed: _disconnect,
+              ),
+            ],
+          ),
+          body: _buildBody(),
+        );
+      },
     );
   }
 
   Widget _buildBody() {
-    switch (_state) {
-      case _ConnectionState.connecting:
+    switch (_session.state) {
+      case TerminalConnectionState.connecting:
         return const Center(child: CircularProgressIndicator());
-      case _ConnectionState.failed:
+      case TerminalConnectionState.failed:
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -153,18 +84,19 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 const Icon(Icons.error_outline, color: Colors.red, size: 48),
                 const SizedBox(height: 12),
                 Text(
-                  'Gagal konek: ${_errorMessage ?? 'unknown error'}',
+                  'Gagal konek: ${_session.errorMessage ?? 'unknown error'}',
                   textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
         );
-      case _ConnectionState.connected:
-      case _ConnectionState.closed:
+      case TerminalConnectionState.connected:
+      case TerminalConnectionState.closed:
+        final closed = _session.state == TerminalConnectionState.closed;
         return Column(
           children: [
-            if (_state == _ConnectionState.closed)
+            if (closed)
               Container(
                 width: double.infinity,
                 color: Colors.orange.shade800,
@@ -179,10 +111,10 @@ class _TerminalScreenState extends State<TerminalScreen> {
               ),
             Expanded(
               child: TerminalView(
-                _terminal,
-                controller: _terminalController,
+                _session.terminal,
+                controller: _session.terminalController,
                 autofocus: true,
-                readOnly: _state == _ConnectionState.closed,
+                readOnly: closed,
                 // Disables the on-screen keyboard's autocorrect/word-suggestion
                 // composing behavior (default TextInputType.emailAddress still
                 // lets some keyboards, e.g. Gboard, batch keystrokes into a
