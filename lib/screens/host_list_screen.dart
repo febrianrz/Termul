@@ -30,6 +30,7 @@ class _HostListScreenState extends State<HostListScreen> {
   late List<SshHost> _hosts;
   late List<HostGroup> _groups;
   bool _loggedIn = false;
+  Map<String, dynamic>? _user;
   UpdateInfo? _updateInfo;
 
   @override
@@ -57,8 +58,36 @@ class _HostListScreenState extends State<HostListScreen> {
   }
 
   Future<void> _loadAuthStatus() async {
-    final loggedIn = await context.read<AuthService>().isLoggedIn();
-    if (mounted) setState(() => _loggedIn = loggedIn);
+    final auth = context.read<AuthService>();
+    final loggedIn = await auth.isLoggedIn();
+    final user = loggedIn ? await auth.fetchUser() : null;
+    if (mounted) {
+      setState(() {
+        _loggedIn = loggedIn;
+        _user = user;
+      });
+    }
+  }
+
+  /// Best-effort display name from `/api/user` - the schema isn't
+  /// documented beyond "Alter Indonesia's", so fall back across the field
+  /// names a Laravel Passport user endpoint commonly returns.
+  String? _userDisplayName() {
+    final user = _user;
+    if (user == null) return null;
+    return (user['name'] ?? user['full_name'] ?? user['email']) as String?;
+  }
+
+  String _userInitials() {
+    final name = _userDisplayName();
+    if (name == null || name.trim().isEmpty) return '?';
+    final letters = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .take(2)
+        .map((part) => part[0].toUpperCase())
+        .join();
+    return letters.isEmpty ? '?' : letters;
   }
 
   void _reload() {
@@ -137,7 +166,14 @@ class _HostListScreenState extends State<HostListScreen> {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
     );
-    if (result == true) _loadAuthStatus();
+    if (result != true) return;
+
+    await _loadAuthStatus();
+    if (!mounted) return;
+    final name = _userDisplayName() ?? 'Alter One';
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Berhasil login sebagai $name')));
   }
 
   Future<void> _logout() async {
@@ -161,7 +197,12 @@ class _HostListScreenState extends State<HostListScreen> {
     if (confirmed != true) return;
 
     await auth.logout();
-    if (mounted) setState(() => _loggedIn = false);
+    if (mounted) {
+      setState(() {
+        _loggedIn = false;
+        _user = null;
+      });
+    }
   }
 
   Widget _updateBanner(UpdateInfo info) {
@@ -302,10 +343,29 @@ class _HostListScreenState extends State<HostListScreen> {
             onPressed: _openSettings,
           ),
           if (_loggedIn)
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: 'Logout',
-              onPressed: _logout,
+            PopupMenuButton<String>(
+              tooltip: _userDisplayName() ?? 'Akun',
+              icon: CircleAvatar(
+                radius: 14,
+                child: Text(
+                  _userInitials(),
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+              onSelected: (value) {
+                if (value == 'logout') _logout();
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  enabled: false,
+                  child: Text(_userDisplayName() ?? 'Akun'),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem<String>(
+                  value: 'logout',
+                  child: Text('Logout'),
+                ),
+              ],
             )
           else
             IconButton(
