@@ -266,4 +266,29 @@ class AppStrings {
   String get notConnected => _t('Tidak terhubung', 'Not connected');
   String sendToSessionsButton(int count) =>
       _t('Kirim ke $count sesi', 'Send to $count sessions');
+
+  // ---------------------------------------------------------------------
+  // Port forward
+  // ---------------------------------------------------------------------
+  String portForwardTitle(String host) => 'Port Forward · $host';
+  String get deleteTunnelTitle => _t('Hapus tunnel?', 'Delete tunnel?');
+  String deleteTunnelBody(String name) =>
+      _t('Tunnel "$name" akan dihapus.', 'Tunnel "$name" will be deleted.');
+  String get local => 'Local';
+  String get remote => 'Remote';
+  String get sessionNotConnectedNotice => _t(
+    'Sesi belum terhubung - tunnel akan aktif begitu tersambung',
+    'Session not connected yet - the tunnel will activate once connected',
+  );
+  String get noTunnelsYet => _t('Belum ada tunnel', 'No tunnels yet');
+  String get addTunnelTooltip => _t('Tambah tunnel', 'Add tunnel');
+  String get newTunnel => _t('Tunnel Baru', 'New Tunnel');
+  String get editTunnel => _t('Edit Tunnel', 'Edit Tunnel');
+  String get localPortHint => _t('Port lokal (di HP)', 'Local port (on phone)');
+  String get remotePortHint =>
+      _t('Port di server remote', 'Port on the remote server');
+  String get targetHost => _t('Target host', 'Target host');
+  String get targetHostHint =>
+      _t('contoh: localhost atau 10.0.0.5', 'e.g. localhost or 10.0.0.5');
+  String get targetPort => _t('Target port', 'Target port');
 }
