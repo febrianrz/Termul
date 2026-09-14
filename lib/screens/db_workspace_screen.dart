@@ -189,10 +189,16 @@ class _DbSessionViewState extends State<_DbSessionView> {
   List<String> _tables = [];
   List<DbQueryShortcut> _shortcuts = [];
   String? _selectedDatabase;
+  String? _selectedTable;
   DbQueryResult? _result;
   String? _queryError;
   bool _running = false;
   DbConnectionState? _lastLoadedFor;
+
+  bool _loadingDatabases = false;
+  String? _databasesError;
+  bool _loadingTables = false;
+  String? _tablesError;
 
   int _subTab = 0; // 0 = Query, 1 = Users
   List<DbUser>? _users;
@@ -230,31 +236,53 @@ class _DbSessionViewState extends State<_DbSessionView> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _maybeLoadDatabases() async {
+  Future<void> _maybeLoadDatabases({bool retry = false}) async {
     final session = widget.session;
     if (session.state != DbConnectionState.connected) return;
-    if (_lastLoadedFor == DbConnectionState.connected) return;
+    if (!retry && _lastLoadedFor == DbConnectionState.connected) return;
     _lastLoadedFor = DbConnectionState.connected;
 
+    setState(() {
+      _loadingDatabases = true;
+      _databasesError = null;
+    });
     try {
       final databases = await session.listDatabases();
       if (!mounted) return;
-      setState(() => _databases = databases);
-      if (_selectedDatabase != null) {
-        await _loadTables(_selectedDatabase!);
-      }
-    } catch (_) {
-      // Best-effort - the query editor still works without the picker.
+      // Nothing selected yet (a fresh connection, or the saved default
+      // database wasn't in the list) - default to the first entry instead
+      // of leaving the picker with nothing chosen.
+      final selected = _selectedDatabase != null && databases.contains(_selectedDatabase)
+          ? _selectedDatabase
+          : (databases.isNotEmpty ? databases.first : null);
+      setState(() {
+        _databases = databases;
+        _selectedDatabase = selected;
+      });
+      if (selected != null) await _loadTables(selected);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _databasesError = e.toString());
+    } finally {
+      if (mounted) setState(() => _loadingDatabases = false);
     }
   }
 
   Future<void> _loadTables(String database) async {
+    setState(() {
+      _loadingTables = true;
+      _tablesError = null;
+      _selectedTable = null;
+    });
     try {
       final tables = await widget.session.listTables(database);
       if (!mounted) return;
       setState(() => _tables = tables);
-    } catch (_) {
-      // Best-effort, same as above.
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _tablesError = e.toString());
+    } finally {
+      if (mounted) setState(() => _loadingTables = false);
     }
   }
 
@@ -565,7 +593,7 @@ class _DbSessionViewState extends State<_DbSessionView> {
   Widget _queryTab() {
     return Column(
       children: [
-        if (_databases.isNotEmpty) _dbTablePicker(),
+        _databaseSection(),
         if (_shortcuts.isNotEmpty) _shortcutChipRow(),
         Padding(
           padding: const EdgeInsets.all(12),
@@ -632,56 +660,152 @@ class _DbSessionViewState extends State<_DbSessionView> {
     );
   }
 
-  Widget _dbTablePicker() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      child: Row(
+  /// Quotes a table/column identifier the way [connection]'s engine
+  /// expects - backticks for MySQL/MariaDB/SQLite, double quotes for
+  /// PostgreSQL.
+  String _quoteIdent(String ident) {
+    if (widget.session.connection.engine == DbEngine.postgres) {
+      return '"${ident.replaceAll('"', '""')}"';
+    }
+    return '`${ident.replaceAll('`', '``')}`';
+  }
+
+  void _pickTable(String table) {
+    setState(() {
+      _selectedTable = table;
+      _sqlController.text = 'SELECT * FROM ${_quoteIdent(table)} LIMIT 100';
+    });
+  }
+
+  /// Always-visible database/table browser above the SQL editor: a
+  /// database picker row, then either a loading spinner, an inline error
+  /// with a retry button, or the selected database's tables as tappable
+  /// chips (tapping one fills the editor with a starter `SELECT`).
+  Widget _databaseSection() {
+    final outline = Theme.of(context).colorScheme.outlineVariant;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: outline),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: DropdownButtonFormField<String?>(
-              initialValue: _selectedDatabase,
-              decoration: InputDecoration(
-                labelText: _s.databaseTab,
-                isDense: true,
+          Row(
+            children: [
+              const Icon(Icons.storage_outlined, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: _databasePickerRow()),
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 18),
+                tooltip: _s.refresh,
+                visualDensity: VisualDensity.compact,
+                onPressed: _loadingDatabases
+                    ? null
+                    : () => _maybeLoadDatabases(retry: true),
               ),
-              items: _databases
-                  .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedDatabase = value;
-                  _tables = [];
-                });
-                if (value != null) _loadTables(value);
-              },
-            ),
+            ],
           ),
-          if (_tables.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                decoration: InputDecoration(
-                  labelText: _s.selectTableHint,
-                  isDense: true,
-                ),
-                items: _tables
-                    .map(
-                      (t) => DropdownMenuItem(
-                        value: t,
-                        child: Text(t, overflow: TextOverflow.ellipsis),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (table) {
-                  if (table == null) return;
-                  setState(
-                    () => _sqlController.text = 'SELECT * FROM `$table` LIMIT 100',
-                  );
-                },
-              ),
-            ),
+          if (_selectedDatabase != null && _databasesError == null) ...[
+            const Divider(height: 16),
+            _tablesArea(),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _databasePickerRow() {
+    if (_loadingDatabases) {
+      return const SizedBox(
+        height: 20,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ],
+        ),
+      );
+    }
+    if (_databasesError != null) {
+      return Text(
+        _databasesError!,
+        style: const TextStyle(color: Colors.red, fontSize: 12),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+    if (_databases.isEmpty) {
+      return Text(
+        _s.noDatabasesFound,
+        style: Theme.of(context).textTheme.bodySmall,
+      );
+    }
+    return DropdownButton<String>(
+      value: _selectedDatabase,
+      isDense: true,
+      isExpanded: true,
+      underline: const SizedBox.shrink(),
+      hint: Text(_s.databaseTab),
+      items: _databases
+          .map(
+            (d) => DropdownMenuItem(
+              value: d,
+              child: Text(d, overflow: TextOverflow.ellipsis),
+            ),
+          )
+          .toList(),
+      onChanged: (value) {
+        if (value == null) return;
+        setState(() => _selectedDatabase = value);
+        _loadTables(value);
+      },
+    );
+  }
+
+  Widget _tablesArea() {
+    if (_loadingTables) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 4),
+        child: SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+    if (_tablesError != null) {
+      return Text(
+        _tablesError!,
+        style: const TextStyle(color: Colors.red, fontSize: 12),
+      );
+    }
+    if (_tables.isEmpty) {
+      return Text(
+        _s.noTablesFound,
+        style: Theme.of(context).textTheme.bodySmall,
+      );
+    }
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 120),
+      child: SingleChildScrollView(
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _tables.map((table) {
+            return ChoiceChip(
+              label: Text(table, overflow: TextOverflow.ellipsis),
+              selected: table == _selectedTable,
+              onSelected: (_) => _pickTable(table),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
