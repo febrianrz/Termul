@@ -62,6 +62,13 @@ class PostgresDbDriver implements DbDriver {
   String _escapeIdent(String s) => '"${s.replaceAll('"', '""')}"';
   String _escapeLiteral(String s) => "'${s.replaceAll("'", "''")}'";
 
+  /// Reads one column of a row as a string, without a hard `as String`
+  /// cast - the postgres package's decoded value type isn't always exactly
+  /// `String` for every text-like Postgres type, and a failed cast here
+  /// used to surface as a silently-swallowed exception (the workspace
+  /// screen's database/table picker just stayed empty with no error shown).
+  String _str(dynamic value) => value?.toString() ?? '';
+
   @override
   Future<List<String>> listDatabases() async {
     final result = await _connection.execute(
@@ -70,7 +77,7 @@ class PostgresDbDriver implements DbDriver {
       "AND schema_name NOT LIKE 'pg_toast%' AND schema_name NOT LIKE 'pg_temp%' "
       'ORDER BY schema_name',
     );
-    return result.map((row) => row[0] as String).toList();
+    return result.map((row) => _str(row[0])).toList();
   }
 
   @override
@@ -80,7 +87,7 @@ class PostgresDbDriver implements DbDriver {
       'SELECT tablename FROM pg_tables WHERE schemaname = '
       '${_escapeLiteral(schema)} ORDER BY tablename',
     );
-    return result.map((row) => row[0] as String).toList();
+    return result.map((row) => _str(row[0])).toList();
   }
 
   @override
@@ -102,14 +109,14 @@ class PostgresDbDriver implements DbDriver {
       "WHERE tc.constraint_type = 'PRIMARY KEY' "
       'AND tc.table_schema = $escapedSchema AND tc.table_name = $escapedTable',
     );
-    final pkColumns = pkResult.map((r) => r[0] as String).toSet();
+    final pkColumns = pkResult.map((r) => _str(r[0])).toSet();
 
     return columnsResult.map((r) {
-      final name = r[0] as String;
+      final name = _str(r[0]);
       return DbColumn(
         name: name,
-        type: r[1] as String,
-        nullable: (r[2] as String) == 'YES',
+        type: _str(r[1]),
+        nullable: _str(r[2]) == 'YES',
         isPrimaryKey: pkColumns.contains(name),
       );
     }).toList();

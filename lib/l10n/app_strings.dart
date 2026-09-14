@@ -316,6 +316,10 @@ class AppStrings {
       : _t('$shown baris', '$shown rows');
   String get selectTableHint =>
       _t('Pilih database & tabel', 'Select a database & table');
+  String get noTablesFound => _t('Tidak ada tabel', 'No tables found');
+  String get noDatabasesFound =>
+      _t('Tidak ada database', 'No databases found');
+  String get refresh => _t('Muat ulang', 'Refresh');
   String get sqlQueryHint => _t(
     'Tulis query SQL di sini...',
     'Write a SQL query here...',
