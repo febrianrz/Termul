@@ -73,7 +73,7 @@ class _DbConnectionEditScreenState extends State<DbConnectionEditScreen> {
   late int _colorValue = widget.connection?.colorValue ?? _dbColorSwatches[5];
   late SqliteSource _sqliteSource =
       widget.connection?.sqliteSource ?? SqliteSource.local;
-  String? _sqliteLocalPath = widget.connection?.sqliteLocalPath;
+  late String? _sqliteLocalPath = widget.connection?.sqliteLocalPath;
 
   bool get _isSqlite => _engine == DbEngine.sqlite;
 
