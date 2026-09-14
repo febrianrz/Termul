@@ -66,6 +66,10 @@ dependencies:
   url_launcher: ^6.3.2
   # Biometric/device-credential app lock (Settings > "Kunci dengan biometrik").
   local_auth: ^2.3.0
+  # Pure-Dart MySQL/MariaDB client for the Database tab (both engines share
+  # this wire protocol). No native deps, so it works over the same
+  # loopback-forwarded socket the SSH tunnel exposes.
+  mysql_client: ^0.0.27
 
 dev_dependencies:
   flutter_test:

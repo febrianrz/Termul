@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 
 import 'auth/app_lock_controller.dart';
 import 'auth/auth_service.dart';
+import 'data/db_repository.dart';
 import 'data/host_repository.dart';
 import 'data/settings_repository.dart';
 import 'screens/host_list_screen.dart';
 import 'screens/lock_screen.dart';
+import 'session/db_session_manager.dart';
 import 'session/session_manager.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
@@ -19,12 +21,16 @@ Future<void> main() async {
   final hostRepository = HostRepository();
   await hostRepository.init();
 
+  final dbRepository = DbRepository();
+  await dbRepository.init();
+
   final settingsRepository = SettingsRepository();
   await settingsRepository.init();
 
   runApp(
     TermulApp(
       hostRepository: hostRepository,
+      dbRepository: dbRepository,
       settingsRepository: settingsRepository,
     ),
   );
@@ -32,11 +38,13 @@ Future<void> main() async {
 
 class TermulApp extends StatelessWidget {
   final HostRepository hostRepository;
+  final DbRepository dbRepository;
   final SettingsRepository settingsRepository;
 
   const TermulApp({
     super.key,
     required this.hostRepository,
+    required this.dbRepository,
     required this.settingsRepository,
   });
 
@@ -45,9 +53,13 @@ class TermulApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<HostRepository>.value(value: hostRepository),
+        Provider<DbRepository>.value(value: dbRepository),
         Provider<AuthService>(create: (_) => AuthService()),
         ChangeNotifierProvider<SessionManager>(
           create: (_) => SessionManager(),
+        ),
+        ChangeNotifierProvider<DbSessionManager>(
+          create: (_) => DbSessionManager(),
         ),
         ChangeNotifierProvider<ThemeController>(
           create: (_) => ThemeController(settingsRepository),

@@ -99,6 +99,12 @@ class TerminalSession extends ChangeNotifier {
   final Map<String, _ActiveForward> _activeForwards = {};
   final Map<String, String> _forwardErrors = {};
 
+  /// Unnamed forwards opened on the fly (e.g. by a Database connection
+  /// tunneling to a remote MySQL/MariaDB server), keyed by the local port
+  /// they bound. Kept separate from [_activeForwards] so they never show up
+  /// in the user-visible saved [PortForward] list.
+  final Map<int, _ActiveForward> _ephemeralForwards = {};
+
   /// IDs of [PortForward]s currently tunneling traffic through this session.
   Set<String> get activeForwardIds => _activeForwards.keys.toSet();
 
@@ -352,9 +358,52 @@ class TerminalSession extends ChangeNotifier {
     await forward?.close();
   }
 
+  /// Opens an unnamed local forward to `targetHost:targetPort`, the same
+  /// way a [PortForwardType.local] tunnel does (see [_startLocalForward]),
+  /// but bound to an OS-assigned free port instead of a user-chosen one and
+  /// not tracked in the saved [PortForward] list. Used by the Database tab
+  /// to reach a DB server through this session's SSH connection. Requires
+  /// the session to be [TerminalConnectionState.connected].
+  Future<int> openEphemeralLocalForward(
+    String targetHost,
+    int targetPort,
+  ) async {
+    final client = _client;
+    if (client == null || state != TerminalConnectionState.connected) {
+      throw Exception('Sesi belum terhubung');
+    }
+
+    final serverSocket = await ServerSocket.bind(
+      InternetAddress.loopbackIPv4,
+      0,
+    );
+    final subscription = serverSocket.listen((socket) async {
+      try {
+        final channel = await client.forwardLocal(targetHost, targetPort);
+        _pipe(channel, socket);
+      } catch (_) {
+        socket.destroy();
+      }
+    });
+    _ephemeralForwards[serverSocket.port] = _ActiveForward(
+      serverSocket: serverSocket,
+      subscription: subscription,
+    );
+    return serverSocket.port;
+  }
+
+  Future<void> closeEphemeralLocalForward(int localPort) async {
+    final forward = _ephemeralForwards.remove(localPort);
+    await forward?.close();
+  }
+
   Future<void> _stopAllForwards() async {
-    final forwards = _activeForwards.values.toList();
+    final forwards = [
+      ..._activeForwards.values,
+      ..._ephemeralForwards.values,
+    ];
     _activeForwards.clear();
+    _ephemeralForwards.clear();
     for (final forward in forwards) {
       await forward.close();
     }
