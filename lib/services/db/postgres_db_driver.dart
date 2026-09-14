@@ -124,7 +124,7 @@ class PostgresDbDriver implements DbDriver {
     final result = await _connection.execute(sql);
     stopwatch.stop();
     final columns = result.schema.columns
-        .map((c) => c.name ?? '')
+        .map((c) => c.columnName ?? '')
         .toList();
     final rows = result
         .map((row) => [for (var i = 0; i < columns.length; i++) row[i]])
