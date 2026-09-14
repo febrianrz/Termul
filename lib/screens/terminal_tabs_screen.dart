@@ -209,49 +209,69 @@ class _TerminalTabsScreenState extends State<TerminalTabsScreen>
               )];
               return AnimatedBuilder(
                 animation: active,
-                builder: (context, _) => Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.swap_horiz),
-                      tooltip: _s.portForward,
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              PortForwardScreen(host: active.host),
+                builder: (context, _) {
+                  final reconnecting =
+                      active.state == TerminalConnectionState.reconnecting;
+                  final canReconnect =
+                      active.state == TerminalConnectionState.closed ||
+                      active.state == TerminalConnectionState.failed;
+                  final canRunShortcut =
+                      active.state == TerminalConnectionState.connected;
+
+                  if (reconnecting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  }
+
+                  return PopupMenuButton<VoidCallback>(
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (action) => action(),
+                    itemBuilder: (context) => [
+                      if (canReconnect)
+                        PopupMenuItem<VoidCallback>(
+                          value: () =>
+                              active.connect(context.read<HostRepository>()),
+                          child: ListTile(
+                            leading: const Icon(Icons.refresh),
+                            title: Text(_s.reconnect),
+                          ),
+                        ),
+                      PopupMenuItem<VoidCallback>(
+                        value: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                PortForwardScreen(host: active.host),
+                          ),
+                        ),
+                        child: ListTile(
+                          leading: const Icon(Icons.swap_horiz),
+                          title: Text(_s.portForward),
                         ),
                       ),
-                    ),
-                    if (active.state == TerminalConnectionState.connected)
-                      IconButton(
-                        icon: const Icon(Icons.bolt_outlined),
-                        tooltip: _s.runShortcut,
-                        onPressed: () => _runShortcut(active),
-                      ),
-                    if (active.state == TerminalConnectionState.reconnecting)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 12),
-                        child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                      if (canRunShortcut)
+                        PopupMenuItem<VoidCallback>(
+                          value: () => _runShortcut(active),
+                          child: ListTile(
+                            leading: const Icon(Icons.bolt_outlined),
+                            title: Text(_s.runShortcut),
+                          ),
+                        ),
+                      PopupMenuItem<VoidCallback>(
+                        value: () => _closeSession(active),
+                        child: ListTile(
+                          leading: const Icon(Icons.link_off),
+                          title: Text(_s.disconnect),
                         ),
                       ),
-                    if (active.state == TerminalConnectionState.closed ||
-                        active.state == TerminalConnectionState.failed)
-                      IconButton(
-                        icon: const Icon(Icons.refresh),
-                        tooltip: _s.reconnect,
-                        onPressed: () =>
-                            active.connect(context.read<HostRepository>()),
-                      ),
-                    IconButton(
-                      icon: const Icon(Icons.link_off),
-                      tooltip: 'Disconnect',
-                      onPressed: () => _closeSession(active),
-                    ),
-                  ],
-                ),
+                    ],
+                  );
+                },
               );
             },
           ),
@@ -301,35 +321,29 @@ class _SessionTab extends StatelessWidget {
     return Tab(
       child: AnimatedBuilder(
         animation: session,
-        builder: (context, _) => Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: _dotColor(session.state),
-                shape: BoxShape.circle,
+        builder: (context, _) => Tooltip(
+          message: session.host.name,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: _dotColor(session.state),
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 96),
-              child: Text(
-                session.host.name,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onClose,
+                child: const Padding(
+                  padding: EdgeInsets.all(2),
+                  child: Icon(Icons.close, size: 16),
+                ),
               ),
-            ),
-            const SizedBox(width: 4),
-            GestureDetector(
-              onTap: onClose,
-              child: const Padding(
-                padding: EdgeInsets.all(2),
-                child: Icon(Icons.close, size: 16),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
