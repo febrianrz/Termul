@@ -11,6 +11,9 @@ import '../models/ssh_host.dart';
 import '../services/update_checker.dart';
 import '../session/session_manager.dart';
 import '../session/terminal_session.dart';
+import 'db_connections_tab.dart';
+import 'db_group_screen.dart';
+import 'db_query_shortcut_screen.dart';
 import 'host_edit_screen.dart';
 import 'host_group_screen.dart';
 import 'login_screen.dart';
@@ -30,8 +33,7 @@ class HostListScreen extends StatefulWidget {
   State<HostListScreen> createState() => _HostListScreenState();
 }
 
-class _HostListScreenState extends State<HostListScreen>
-    with SingleTickerProviderStateMixin {
+class _HostListScreenState extends State<HostListScreen> {
   late List<SshHost> _hosts;
   late List<HostGroup> _groups;
   bool _loggedIn = false;
@@ -40,21 +42,14 @@ class _HostListScreenState extends State<HostListScreen>
   String _searchQuery = '';
   String? _selectedTag;
   final AppStrings _s = AppStrings();
-  late final TabController _tabController;
+  int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _reload();
     _loadAuthStatus();
     _checkForUpdate();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   /// Best-effort, silent check so the app can flag a newer build without
@@ -134,9 +129,15 @@ class _HostListScreenState extends State<HostListScreen>
     );
   }
 
-  void _openSettings() {
+  Future<void> _openDbGroups() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const DbGroupScreen()),
+    );
+  }
+
+  void _openDbQueryShortcuts() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+      MaterialPageRoute(builder: (_) => const DbQueryShortcutScreen()),
     );
   }
 
@@ -437,18 +438,12 @@ class _HostListScreenState extends State<HostListScreen>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  /// The SSH tab as its own page (own [AppBar] + account/overflow menu) -
+  /// one of four bottom-nav destinations, see [build].
+  Widget _sshPage() {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Termul'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(icon: const Icon(Icons.dns_outlined), text: _s.sshTab),
-            Tab(icon: const Icon(Icons.apps_outlined), text: _s.webShortcuts),
-          ],
-        ),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -457,7 +452,6 @@ class _HostListScreenState extends State<HostListScreen>
               if (value == 'import_qr') _importFromMac();
               if (value == 'groups') _openGroups();
               if (value == 'shortcuts') _openShortcuts();
-              if (value == 'settings') _openSettings();
               if (value == 'login') _login();
               if (value == 'logout') _logout();
             },
@@ -490,10 +484,6 @@ class _HostListScreenState extends State<HostListScreen>
                 PopupMenuItem<String>(
                   value: 'shortcuts',
                   child: _menuRow(Icons.bolt_outlined, _s.commandShortcuts),
-                ),
-                PopupMenuItem<String>(
-                  value: 'settings',
-                  child: _menuRow(Icons.settings_outlined, _s.settings),
                 ),
                 const PopupMenuDivider(),
                 if (_loggedIn) ...[
@@ -532,9 +522,79 @@ class _HostListScreenState extends State<HostListScreen>
           ),
         ],
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [_sshTab(), const WebShortcutsTab()],
+      body: _sshTab(),
+    );
+  }
+
+  Widget _webShortcutsPage() {
+    return Scaffold(
+      appBar: AppBar(title: Text(_s.webShortcuts)),
+      body: const WebShortcutsTab(),
+    );
+  }
+
+  Widget _dbPage() {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_s.databaseTab),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              if (value == 'groups') _openDbGroups();
+              if (value == 'shortcuts') _openDbQueryShortcuts();
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'groups',
+                child: _menuRow(Icons.folder_outlined, _s.manageGroups),
+              ),
+              PopupMenuItem<String>(
+                value: 'shortcuts',
+                child: _menuRow(Icons.bolt_outlined, _s.manageQueryShortcuts),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: const DbConnectionsTab(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          _sshPage(),
+          _webShortcutsPage(),
+          _dbPage(),
+          const SettingsScreen(),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) =>
+            setState(() => _selectedIndex = index),
+        destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.dns_outlined),
+            label: _s.sshTab,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.apps_outlined),
+            label: _s.webShortcuts,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.storage_outlined),
+            label: _s.databaseTab,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.settings_outlined),
+            label: _s.settings,
+          ),
+        ],
       ),
     );
   }

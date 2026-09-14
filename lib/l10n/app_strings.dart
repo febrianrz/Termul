@@ -241,6 +241,10 @@ class AppStrings {
       _t('Passphrase (opsional)', 'Passphrase (optional)');
   String get newGroup => _t('Grup Baru', 'New Group');
   String get groupName => _t('Nama grup', 'Group name');
+  String get testConnection => _t('Tes Koneksi', 'Test Connection');
+  String get connectionOk => _t('Koneksi berhasil', 'Connection successful');
+  String connectionFailed(String error) =>
+      _t('Koneksi gagal: $error', 'Connection failed: $error');
 
   // ---------------------------------------------------------------------
   // Host groups
@@ -255,6 +259,86 @@ class AppStrings {
     'deleted, they just become ungrouped.',
   );
   String get sshGroups => _t('Grup SSH', 'SSH Groups');
+  String get dbGroups => _t('Grup Database', 'Database Groups');
+
+  // ---------------------------------------------------------------------
+  // Database tab
+  // ---------------------------------------------------------------------
+  String get databaseTab => _t('Database', 'Database');
+  String get addDbConnection => _t('Tambah Koneksi DB', 'Add DB Connection');
+  String get editDbConnection => _t('Edit Koneksi DB', 'Edit DB Connection');
+  String get dbEngine => _t('Engine', 'Engine');
+  String get sqliteSource => _t('Sumber File', 'File Source');
+  String get sqliteSourceLocal => _t('File di HP', 'Local File');
+  String get sqliteSourceRemote => _t('Via SSH (SFTP)', 'Via SSH (SFTP)');
+  String get selectSqliteFile => _t('Pilih file .sqlite', 'Select .sqlite file');
+  String get sqliteRemotePathLabel =>
+      _t('Path file di server', 'File path on server');
+  String get enterSqliteRemotePath => _t(
+    'Isi path file SQLite di server',
+    'Enter the SQLite file path on the server',
+  );
+  String get connectMode => _t('Mode Koneksi', 'Connect Mode');
+  String get tunnelViaHost => _t('Tunnel via Host', 'Tunnel via Host');
+  String get directConnection => _t('Langsung', 'Direct');
+  String get sshHost => _t('Host SSH', 'SSH Host');
+  String get dbHostLabel => _t('Host/IP Database', 'Database Host/IP');
+  String get dbHostTunnelHint => _t(
+    'dilihat dari host SSH, mis. 127.0.0.1',
+    'as seen from the SSH host, e.g. 127.0.0.1',
+  );
+  String get dbHostDirectHint =>
+      _t('contoh: 192.168.1.20', 'e.g. 192.168.1.20');
+  String get defaultDatabaseOptional =>
+      _t('Database default (opsional)', 'Default database (optional)');
+  String get color => _t('Warna', 'Color');
+  String get selectSshHost =>
+      _t('Pilih host SSH untuk tunnel ini', 'Select an SSH host for this tunnel');
+  String get noDbConnectionsYet =>
+      _t('Belum ada koneksi database', 'No database connections yet');
+  String get noMatchingDbConnections => _t(
+    'Tidak ada koneksi database yang cocok',
+    'No matching database connections',
+  );
+  String get deleteDbConnectionTitle =>
+      _t('Hapus koneksi ini?', 'Delete this connection?');
+  String deleteDbConnectionBody(String name) => _t(
+    'Koneksi "$name" akan dihapus permanen.',
+    'The "$name" connection will be permanently deleted.',
+  );
+  String get searchDbConnectionsHint =>
+      _t('Cari koneksi database...', 'Search database connections...');
+  String get runQuery => _t('Jalankan', 'Run');
+  String get queryResultEmpty =>
+      _t('Tidak ada hasil', 'No results');
+  String queryRowsInfo(int shown, int? affected) => affected != null
+      ? _t('$affected baris terpengaruh', '$affected rows affected')
+      : _t('$shown baris', '$shown rows');
+  String get selectTableHint =>
+      _t('Pilih database & tabel', 'Select a database & table');
+  String get sqlQueryHint => _t(
+    'Tulis query SQL di sini...',
+    'Write a SQL query here...',
+  );
+  String get dbQueryShortcuts =>
+      _t('Shortcut Query', 'Query Shortcuts');
+  String get anyEngine => _t('Semua engine', 'Any engine');
+  String get manageQueryShortcuts =>
+      _t('Kelola shortcut query', 'Manage query shortcuts');
+  String get queryTabLabel => _t('Query', 'Query');
+  String get usersTab => _t('User', 'Users');
+  String get createUser => _t('Buat User', 'Create User');
+  String get dropUser => _t('Hapus User', 'Drop User');
+  String get viewGrants => _t('Lihat Hak Akses', 'View Grants');
+  String get hostPattern => _t('Pola Host', 'Host Pattern');
+  String get dropUserConfirmTitle =>
+      _t('Hapus user ini?', 'Drop this user?');
+  String dropUserConfirmBody(String username) => _t(
+    'User "$username" akan dihapus permanen dari server.',
+    'User "$username" will be permanently removed from the server.',
+  );
+  String get noUsersFound => _t('Tidak ada user', 'No users found');
+  String get noGrantsFound => _t('Tidak ada hak akses', 'No grants found');
   String get noGroupsYet => _t('Belum ada grup', 'No groups yet');
   String get addGroupTooltip => _t('Tambah grup', 'Add group');
 

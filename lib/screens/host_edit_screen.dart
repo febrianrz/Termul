@@ -6,6 +6,7 @@ import '../data/host_repository.dart';
 import '../l10n/app_strings.dart';
 import '../models/host_group.dart';
 import '../models/ssh_host.dart';
+import '../services/ssh_connection_tester.dart';
 import 'qr_scan_screen.dart';
 
 class HostEditScreen extends StatefulWidget {
@@ -58,6 +59,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
   late String? _groupId = widget.host?.groupId;
   late List<HostGroup> _groups;
   bool _saving = false;
+  bool _testing = false;
 
   bool get _isEditing => widget.host != null;
 
@@ -114,6 +116,64 @@ class _HostEditScreenState extends State<HostEditScreen> {
     );
 
     if (mounted) Navigator.of(context).pop();
+  }
+
+  /// Validates auth against the address/port/username/credentials currently
+  /// typed in the form (not necessarily saved yet) - falls back to the
+  /// already-saved secret when editing and the credential field was left
+  /// blank (same "blank means unchanged" convention [_save] uses).
+  Future<void> _testConnection() async {
+    final address = _addressController.text.trim();
+    final username = _usernameController.text.trim();
+    final port = int.tryParse(_portController.text.trim());
+    if (address.isEmpty || username.isEmpty || port == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_s.requiredField)));
+      return;
+    }
+
+    setState(() => _testing = true);
+    final repo = context.read<HostRepository>();
+
+    String? password;
+    String? privateKey;
+    String? passphrase;
+    if (_authType == SshAuthType.password) {
+      password = _passwordController.text.isNotEmpty
+          ? _passwordController.text
+          : (_isEditing ? await repo.getPassword(widget.host!.id) : null);
+    } else {
+      privateKey = _privateKeyController.text.isNotEmpty
+          ? _privateKeyController.text
+          : (_isEditing ? await repo.getPrivateKey(widget.host!.id) : null);
+      passphrase = _passphraseController.text.isNotEmpty
+          ? _passphraseController.text
+          : (_isEditing ? await repo.getPassphrase(widget.host!.id) : null);
+    }
+
+    final error = await SshConnectionTester.test(
+      address: address,
+      port: port,
+      username: username,
+      authType: _authType,
+      password: password,
+      privateKeyPem: privateKey,
+      passphrase: passphrase,
+    );
+
+    if (!mounted) return;
+    setState(() => _testing = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          error == null ? _s.connectionOk : _s.connectionFailed(error),
+        ),
+        backgroundColor: error == null
+            ? Colors.green.shade700
+            : Colors.red.shade700,
+      ),
+    );
   }
 
   List<String> _parseTags() => _tagsController.text
@@ -312,7 +372,19 @@ class _HostEditScreenState extends State<HostEditScreen> {
                 obscureText: true,
               ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: _testing ? null : _testConnection,
+              icon: _testing
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.wifi_tethering),
+              label: Text(_s.testConnection),
+            ),
+            const SizedBox(height: 12),
             FilledButton(
               onPressed: _saving ? null : _save,
               child: _saving
