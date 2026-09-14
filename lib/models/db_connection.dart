@@ -4,8 +4,12 @@
 enum DbEngine { mysql, mariadb, postgres, sqlite }
 
 /// How a [DbConnection] reaches its server. Ignored for [DbEngine.sqlite],
-/// which instead reads a file (local or fetched over SFTP - not yet wired).
+/// which instead reads a file - see [SqliteSource].
 enum DbConnectMode { tunnel, direct }
+
+/// Where a [DbEngine.sqlite] connection's file comes from. Ignored for
+/// every other engine.
+enum SqliteSource { local, remote }
 
 /// Metadata for a saved database connection. Like [SshHost]
 /// (`lib/models/ssh_host.dart`), the password is never stored here - it
@@ -28,6 +32,13 @@ class DbConnection {
   String username;
   String? database;
 
+  /// [DbEngine.sqlite] only - where the file comes from, and the path in
+  /// each case (a device-local path for [SqliteSource.local], a path on
+  /// the [sshHostId] host to fetch over SFTP for [SqliteSource.remote]).
+  SqliteSource? sqliteSource;
+  String? sqliteLocalPath;
+  String? sqliteRemotePath;
+
   int colorValue;
   List<String> tags;
   String? groupId;
@@ -42,6 +53,9 @@ class DbConnection {
     required this.port,
     required this.username,
     this.database,
+    this.sqliteSource,
+    this.sqliteLocalPath,
+    this.sqliteRemotePath,
     required this.colorValue,
     List<String>? tags,
     this.groupId,
@@ -57,6 +71,9 @@ class DbConnection {
     'port': port,
     'username': username,
     'database': database,
+    'sqliteSource': sqliteSource?.name,
+    'sqliteLocalPath': sqliteLocalPath,
+    'sqliteRemotePath': sqliteRemotePath,
     'colorValue': colorValue,
     'tags': tags,
     'groupId': groupId,
@@ -78,6 +95,14 @@ class DbConnection {
     port: map['port'] as int,
     username: map['username'] as String,
     database: map['database'] as String?,
+    sqliteSource: map['sqliteSource'] == null
+        ? null
+        : SqliteSource.values.firstWhere(
+            (e) => e.name == map['sqliteSource'],
+            orElse: () => SqliteSource.local,
+          ),
+    sqliteLocalPath: map['sqliteLocalPath'] as String?,
+    sqliteRemotePath: map['sqliteRemotePath'] as String?,
     colorValue: map['colorValue'] as int,
     tags: (map['tags'] as List?)?.cast<String>() ?? const [],
     groupId: map['groupId'] as String?,

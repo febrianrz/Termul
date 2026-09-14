@@ -13,6 +13,7 @@ import '../session/session_manager.dart';
 import '../session/terminal_session.dart';
 import 'db_connections_tab.dart';
 import 'db_group_screen.dart';
+import 'db_query_shortcut_screen.dart';
 import 'host_edit_screen.dart';
 import 'host_group_screen.dart';
 import 'login_screen.dart';
@@ -131,6 +132,12 @@ class _HostListScreenState extends State<HostListScreen> {
   Future<void> _openDbGroups() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const DbGroupScreen()),
+    );
+  }
+
+  void _openDbQueryShortcuts() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const DbQueryShortcutScreen()),
     );
   }
 
@@ -531,10 +538,22 @@ class _HostListScreenState extends State<HostListScreen> {
       appBar: AppBar(
         title: Text(_s.databaseTab),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.folder_outlined),
-            tooltip: _s.manageGroups,
-            onPressed: _openDbGroups,
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              if (value == 'groups') _openDbGroups();
+              if (value == 'shortcuts') _openDbQueryShortcuts();
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'groups',
+                child: _menuRow(Icons.folder_outlined, _s.manageGroups),
+              ),
+              PopupMenuItem<String>(
+                value: 'shortcuts',
+                child: _menuRow(Icons.bolt_outlined, _s.manageQueryShortcuts),
+              ),
+            ],
           ),
         ],
       ),

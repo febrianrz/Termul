@@ -70,6 +70,11 @@ dependencies:
   # this wire protocol). No native deps, so it works over the same
   # loopback-forwarded socket the SSH tunnel exposes.
   mysql_client: ^0.0.27
+  # Pure-Dart PostgreSQL client for the Database tab, same reasoning.
+  postgres: ^3.5.12
+  # SQLite file access for the Database tab's SQLite connections (local
+  # device file, or one fetched over SFTP into a temp file first).
+  sqflite: ^2.4.4
 
 dev_dependencies:
   flutter_test:

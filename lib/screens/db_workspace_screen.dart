@@ -5,6 +5,7 @@ import '../data/db_repository.dart';
 import '../data/host_repository.dart';
 import '../l10n/app_strings.dart';
 import '../models/db_connection.dart';
+import '../models/db_query_shortcut.dart';
 import '../services/db/db_driver.dart';
 import '../session/db_session.dart';
 import '../session/db_session_manager.dart';
@@ -186,11 +187,17 @@ class _DbSessionViewState extends State<_DbSessionView> {
 
   List<String> _databases = [];
   List<String> _tables = [];
+  List<DbQueryShortcut> _shortcuts = [];
   String? _selectedDatabase;
   DbQueryResult? _result;
   String? _queryError;
   bool _running = false;
   DbConnectionState? _lastLoadedFor;
+
+  int _subTab = 0; // 0 = Query, 1 = Users
+  List<DbUser>? _users;
+  String? _usersError;
+  bool _loadingUsers = false;
 
   @override
   void initState() {
@@ -198,6 +205,17 @@ class _DbSessionViewState extends State<_DbSessionView> {
     _selectedDatabase = widget.session.connection.database;
     widget.session.addListener(_onSessionChanged);
     _maybeLoadDatabases();
+    _loadShortcuts();
+  }
+
+  void _loadShortcuts() {
+    final engine = widget.session.connection.engine;
+    final all = context.read<DbRepository>().getAllQueryShortcuts();
+    setState(() {
+      _shortcuts = all
+          .where((s) => s.engine == null || s.engine == engine)
+          .toList();
+    });
   }
 
   @override
@@ -263,6 +281,162 @@ class _DbSessionViewState extends State<_DbSessionView> {
     }
   }
 
+  Future<void> _loadUsers() async {
+    setState(() {
+      _loadingUsers = true;
+      _usersError = null;
+    });
+    try {
+      final users = await widget.session.listUsers();
+      if (!mounted) return;
+      setState(() => _users = users);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _usersError = e.toString());
+    } finally {
+      if (mounted) setState(() => _loadingUsers = false);
+    }
+  }
+
+  Future<void> _createUserDialog() async {
+    final usernameController = TextEditingController();
+    final passwordController = TextEditingController();
+    final hostController = TextEditingController(text: '%');
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(_s.createUser),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: usernameController,
+              autofocus: true,
+              decoration: InputDecoration(labelText: _s.username),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: passwordController,
+              decoration: InputDecoration(labelText: _s.password),
+              obscureText: true,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: hostController,
+              decoration: InputDecoration(labelText: _s.hostPattern),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(_s.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(_s.save),
+          ),
+        ],
+      ),
+    );
+
+    if (saved != true) return;
+    final username = usernameController.text.trim();
+    final password = passwordController.text;
+    final host = hostController.text.trim();
+    if (username.isEmpty || password.isEmpty) return;
+
+    try {
+      await widget.session.createUser(
+        username,
+        password,
+        host: host.isEmpty ? null : host,
+      );
+      await _loadUsers();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  Future<void> _dropUserConfirm(DbUser user) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(_s.dropUserConfirmTitle),
+        content: Text(_s.dropUserConfirmBody(user.username)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(_s.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(_s.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await widget.session.dropUser(user.username, host: user.host);
+      await _loadUsers();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  Future<void> _viewGrants(DbUser user) async {
+    List<String> grants;
+    try {
+      grants = await widget.session.listGrants(user.username, host: user.host);
+    } catch (e) {
+      grants = [e.toString()];
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(user.host != null ? '${user.username}@${user.host}' : user.username),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: grants.isEmpty
+              ? Text(_s.noGrantsFound)
+              : ListView(
+                  shrinkWrap: true,
+                  children: grants
+                      .map(
+                        (g) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            g,
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(_s.cancel),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _reconnect() {
     _lastLoadedFor = null;
     return widget.session.connect(
@@ -304,14 +478,95 @@ class _DbSessionViewState extends State<_DbSessionView> {
           ),
         );
       case DbConnectionState.connected:
-        return _queryTab();
+        return _connectedBody();
     }
+  }
+
+  Widget _connectedBody() {
+    if (!widget.session.supportsUserManagement) return _queryTab();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: SegmentedButton<int>(
+            segments: [
+              ButtonSegment(value: 0, label: Text(_s.queryTabLabel)),
+              ButtonSegment(value: 1, label: Text(_s.usersTab)),
+            ],
+            selected: {_subTab},
+            onSelectionChanged: (s) {
+              setState(() => _subTab = s.first);
+              if (_subTab == 1) _loadUsers();
+            },
+          ),
+        ),
+        Expanded(child: _subTab == 0 ? _queryTab() : _usersTab()),
+      ],
+    );
+  }
+
+  Widget _usersTab() {
+    if (_loadingUsers) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_usersError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(_usersError!, style: const TextStyle(color: Colors.red)),
+        ),
+      );
+    }
+
+    final users = _users ?? [];
+    return Stack(
+      children: [
+        users.isEmpty
+            ? Center(child: Text(_s.noUsersFound))
+            : ListView.separated(
+                itemCount: users.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final user = users[index];
+                  return ListTile(
+                    leading: const Icon(Icons.person_outline),
+                    title: Text(user.username),
+                    subtitle: user.host != null ? Text('@${user.host}') : null,
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'grants') _viewGrants(user);
+                        if (value == 'drop') _dropUserConfirm(user);
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'grants',
+                          child: Text(_s.viewGrants),
+                        ),
+                        PopupMenuItem(value: 'drop', child: Text(_s.dropUser)),
+                      ],
+                    ),
+                  );
+                },
+              ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            onPressed: _createUserDialog,
+            tooltip: _s.createUser,
+            child: const Icon(Icons.person_add_alt),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _queryTab() {
     return Column(
       children: [
         if (_databases.isNotEmpty) _dbTablePicker(),
+        if (_shortcuts.isNotEmpty) _shortcutChipRow(),
         Padding(
           padding: const EdgeInsets.all(12),
           child: TextField(
@@ -353,6 +608,27 @@ class _DbSessionViewState extends State<_DbSessionView> {
         const SizedBox(height: 8),
         Expanded(child: _resultsArea()),
       ],
+    );
+  }
+
+  Widget _shortcutChipRow() {
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        itemCount: _shortcuts.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final shortcut = _shortcuts[index];
+          return ActionChip(
+            avatar: const Icon(Icons.bolt_outlined, size: 16),
+            label: Text(shortcut.name),
+            onPressed: () =>
+                setState(() => _sqlController.text = shortcut.sql),
+          );
+        },
+      ),
     );
   }
 

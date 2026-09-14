@@ -105,6 +105,17 @@ class _DbConnectionsTabState extends State<DbConnectionsTab>
     );
   }
 
+  String _connectionSubtitle(DbConnection connection) {
+    final target = connection.engine == DbEngine.sqlite
+        ? (connection.sqliteSource == SqliteSource.local
+              ? connection.sqliteLocalPath?.split('/').last ?? ''
+              : connection.sqliteRemotePath ?? '')
+        : '${connection.username}@${connection.host}:${connection.port}';
+    return connection.tags.isEmpty
+        ? target
+        : '$target · ${connection.tags.join(', ')}';
+  }
+
   Widget _tile(DbConnection connection) {
     return ListTile(
       leading: CircleAvatar(
@@ -116,10 +127,7 @@ class _DbConnectionsTabState extends State<DbConnectionsTab>
       ),
       title: Text(connection.name),
       subtitle: Text(
-        connection.tags.isEmpty
-            ? '${connection.username}@${connection.host}:${connection.port}'
-            : '${connection.username}@${connection.host}:${connection.port}'
-                  ' · ${connection.tags.join(', ')}',
+        _connectionSubtitle(connection),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),

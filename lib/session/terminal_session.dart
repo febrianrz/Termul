@@ -397,6 +397,19 @@ class TerminalSession extends ChangeNotifier {
     await forward?.close();
   }
 
+  /// Opens an SFTP subchannel over this session's SSH connection - used by
+  /// a Database connection to fetch a remote SQLite file (see
+  /// `lib/session/db_session.dart`) without opening a second SSH
+  /// connection just for that one transfer, the same way
+  /// [openEphemeralLocalForward] reuses this connection for a DB tunnel.
+  Future<SftpClient> openSftpClient() async {
+    final client = _client;
+    if (client == null || state != TerminalConnectionState.connected) {
+      throw Exception('Sesi belum terhubung');
+    }
+    return client.sftp();
+  }
+
   Future<void> _stopAllForwards() async {
     final forwards = [
       ..._activeForwards.values,

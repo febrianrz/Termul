@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -60,6 +61,9 @@ class _DbConnectionEditScreenState extends State<DbConnectionEditScreen> {
   late final _tagsController = TextEditingController(
     text: (widget.connection?.tags ?? const <String>[]).join(', '),
   );
+  late final _sqliteRemotePathController = TextEditingController(
+    text: widget.connection?.sqliteRemotePath,
+  );
 
   late DbEngine _engine = widget.connection?.engine ?? DbEngine.mysql;
   late DbConnectMode _connectMode =
@@ -67,6 +71,11 @@ class _DbConnectionEditScreenState extends State<DbConnectionEditScreen> {
   late String? _sshHostId = widget.connection?.sshHostId;
   late String? _groupId = widget.connection?.groupId;
   late int _colorValue = widget.connection?.colorValue ?? _dbColorSwatches[5];
+  late SqliteSource _sqliteSource =
+      widget.connection?.sqliteSource ?? SqliteSource.local;
+  String? _sqliteLocalPath = widget.connection?.sqliteLocalPath;
+
+  bool get _isSqlite => _engine == DbEngine.sqlite;
 
   late List<SshHost> _sshHosts;
   late List<HostGroup> _groups;
@@ -91,8 +100,38 @@ class _DbConnectionEditScreenState extends State<DbConnectionEditScreen> {
     _passwordController.dispose();
     _databaseController.dispose();
     _tagsController.dispose();
+    _sqliteRemotePathController.dispose();
     super.dispose();
   }
+
+  Future<void> _pickSqliteFile() async {
+    final result = await FilePicker.pickFiles();
+    final path = result?.files.single.path;
+    if (path != null) setState(() => _sqliteLocalPath = path);
+  }
+
+  /// Returns an error message if the current engine/mode-specific fields
+  /// are incomplete, or `null` if the draft is ready to save/test.
+  String? _validate() {
+    if (_isSqlite) {
+      if (_sqliteSource == SqliteSource.local) {
+        if (_sqliteLocalPath == null || _sqliteLocalPath!.isEmpty) {
+          return _s.selectSqliteFile;
+        }
+      } else {
+        if (_sshHostId == null) return _s.selectSshHost;
+        if (_sqliteRemotePathController.text.trim().isEmpty) {
+          return _s.enterSqliteRemotePath;
+        }
+      }
+    } else if (_connectMode == DbConnectMode.tunnel && _sshHostId == null) {
+      return _s.selectSshHost;
+    }
+    return null;
+  }
+
+  int _defaultPortFor(DbEngine engine) =>
+      engine == DbEngine.postgres ? 5432 : 3306;
 
   List<String> _parseTags() => _tagsController.text
       .split(',')
@@ -106,13 +145,22 @@ class _DbConnectionEditScreenState extends State<DbConnectionEditScreen> {
     name: _nameController.text.trim(),
     engine: _engine,
     connectMode: _connectMode,
-    sshHostId: _connectMode == DbConnectMode.tunnel ? _sshHostId : null,
-    host: _hostController.text.trim(),
-    port: int.tryParse(_portController.text.trim()) ?? 3306,
-    username: _usernameController.text.trim(),
-    database: _databaseController.text.trim().isEmpty
+    sshHostId: _isSqlite
+        ? (_sqliteSource == SqliteSource.remote ? _sshHostId : null)
+        : (_connectMode == DbConnectMode.tunnel ? _sshHostId : null),
+    host: _isSqlite ? '' : _hostController.text.trim(),
+    port: _isSqlite ? 0 : (int.tryParse(_portController.text.trim()) ?? 3306),
+    username: _isSqlite ? '' : _usernameController.text.trim(),
+    database: _isSqlite || _databaseController.text.trim().isEmpty
         ? null
         : _databaseController.text.trim(),
+    sqliteSource: _isSqlite ? _sqliteSource : null,
+    sqliteLocalPath: _isSqlite && _sqliteSource == SqliteSource.local
+        ? _sqliteLocalPath
+        : null,
+    sqliteRemotePath: _isSqlite && _sqliteSource == SqliteSource.remote
+        ? _sqliteRemotePathController.text.trim()
+        : null,
     colorValue: _colorValue,
     tags: _parseTags(),
     groupId: _groupId,
@@ -120,10 +168,11 @@ class _DbConnectionEditScreenState extends State<DbConnectionEditScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_connectMode == DbConnectMode.tunnel && _sshHostId == null) {
+    final validationError = _validate();
+    if (validationError != null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(_s.selectSshHost)));
+      ).showSnackBar(SnackBar(content: Text(validationError)));
       return;
     }
 
@@ -184,10 +233,11 @@ class _DbConnectionEditScreenState extends State<DbConnectionEditScreen> {
   /// [DbSessionManager].
   Future<void> _testConnection() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_connectMode == DbConnectMode.tunnel && _sshHostId == null) {
+    final validationError = _validate();
+    if (validationError != null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(_s.selectSshHost)));
+      ).showSnackBar(SnackBar(content: Text(validationError)));
       return;
     }
 
@@ -289,99 +339,165 @@ class _DbConnectionEditScreenState extends State<DbConnectionEditScreen> {
               segments: const [
                 ButtonSegment(value: DbEngine.mysql, label: Text('MySQL')),
                 ButtonSegment(value: DbEngine.mariadb, label: Text('MariaDB')),
+                ButtonSegment(
+                  value: DbEngine.postgres,
+                  label: Text('PostgreSQL'),
+                ),
+                ButtonSegment(value: DbEngine.sqlite, label: Text('SQLite')),
               ],
               selected: {_engine},
-              onSelectionChanged: (s) => setState(() => _engine = s.first),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                _s.moreEnginesComingSoon,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              onSelectionChanged: (s) => setState(() {
+                final previousDefault = _defaultPortFor(_engine);
+                _engine = s.first;
+                final newDefault = _defaultPortFor(_engine);
+                final currentPort = _portController.text.trim();
+                if (currentPort.isEmpty ||
+                    currentPort == previousDefault.toString()) {
+                  _portController.text = newDefault.toString();
+                }
+              }),
             ),
             const SizedBox(height: 20),
-            Text(_s.connectMode, style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: 8),
-            SegmentedButton<DbConnectMode>(
-              segments: [
-                ButtonSegment(
-                  value: DbConnectMode.tunnel,
-                  label: Text(_s.tunnelViaHost),
-                  icon: const Icon(Icons.swap_horiz),
+            if (_isSqlite) ...[
+              Text(_s.sqliteSource, style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 8),
+              SegmentedButton<SqliteSource>(
+                segments: [
+                  ButtonSegment(
+                    value: SqliteSource.local,
+                    label: Text(_s.sqliteSourceLocal),
+                    icon: const Icon(Icons.smartphone),
+                  ),
+                  ButtonSegment(
+                    value: SqliteSource.remote,
+                    label: Text(_s.sqliteSourceRemote),
+                    icon: const Icon(Icons.dns_outlined),
+                  ),
+                ],
+                selected: {_sqliteSource},
+                onSelectionChanged: (s) =>
+                    setState(() => _sqliteSource = s.first),
+              ),
+              const SizedBox(height: 12),
+              if (_sqliteSource == SqliteSource.local)
+                OutlinedButton.icon(
+                  onPressed: _pickSqliteFile,
+                  icon: const Icon(Icons.file_open_outlined),
+                  label: Text(
+                    _sqliteLocalPath == null
+                        ? _s.selectSqliteFile
+                        : _sqliteLocalPath!.split('/').last,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                )
+              else ...[
+                DropdownButtonFormField<String?>(
+                  initialValue: _sshHostId,
+                  decoration: InputDecoration(labelText: _s.sshHost),
+                  items: _sshHosts
+                      .map(
+                        (h) => DropdownMenuItem<String?>(
+                          value: h.id,
+                          child: Text(h.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => _sshHostId = value),
                 ),
-                ButtonSegment(
-                  value: DbConnectMode.direct,
-                  label: Text(_s.directConnection),
-                  icon: const Icon(Icons.podcasts),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _sqliteRemotePathController,
+                  decoration: InputDecoration(
+                    labelText: _s.sqliteRemotePathLabel,
+                    hintText: '/var/www/app/database.sqlite',
+                  ),
                 ),
               ],
-              selected: {_connectMode},
-              onSelectionChanged: (s) =>
-                  setState(() => _connectMode = s.first),
-            ),
-            if (_connectMode == DbConnectMode.tunnel) ...[
+            ] else ...[
+              Text(_s.connectMode, style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 8),
+              SegmentedButton<DbConnectMode>(
+                segments: [
+                  ButtonSegment(
+                    value: DbConnectMode.tunnel,
+                    label: Text(_s.tunnelViaHost),
+                    icon: const Icon(Icons.swap_horiz),
+                  ),
+                  ButtonSegment(
+                    value: DbConnectMode.direct,
+                    label: Text(_s.directConnection),
+                    icon: const Icon(Icons.podcasts),
+                  ),
+                ],
+                selected: {_connectMode},
+                onSelectionChanged: (s) =>
+                    setState(() => _connectMode = s.first),
+              ),
+              if (_connectMode == DbConnectMode.tunnel) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String?>(
+                  initialValue: _sshHostId,
+                  decoration: InputDecoration(labelText: _s.sshHost),
+                  items: _sshHosts
+                      .map(
+                        (h) => DropdownMenuItem<String?>(
+                          value: h.id,
+                          child: Text(h.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => _sshHostId = value),
+                ),
+              ],
               const SizedBox(height: 12),
-              DropdownButtonFormField<String?>(
-                initialValue: _sshHostId,
-                decoration: InputDecoration(labelText: _s.sshHost),
-                items: _sshHosts
-                    .map(
-                      (h) => DropdownMenuItem<String?>(
-                        value: h.id,
-                        child: Text(h.name),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => _sshHostId = value),
+              TextFormField(
+                controller: _hostController,
+                decoration: InputDecoration(
+                  labelText: _s.dbHostLabel,
+                  hintText: _connectMode == DbConnectMode.tunnel
+                      ? _s.dbHostTunnelHint
+                      : _s.dbHostDirectHint,
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? _s.requiredField : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _portController,
+                decoration: InputDecoration(labelText: _s.port),
+                keyboardType: TextInputType.number,
+                validator: (v) {
+                  final port = int.tryParse(v?.trim() ?? '');
+                  if (port == null || port <= 0 || port > 65535) {
+                    return _s.invalidPort;
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _usernameController,
+                decoration: InputDecoration(labelText: _s.username),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? _s.requiredField : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: _s.password,
+                  hintText: _isEditing ? _s.leaveBlankToKeep : null,
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _databaseController,
+                decoration: InputDecoration(
+                  labelText: _s.defaultDatabaseOptional,
+                ),
               ),
             ],
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _hostController,
-              decoration: InputDecoration(
-                labelText: _s.dbHostLabel,
-                hintText: _connectMode == DbConnectMode.tunnel
-                    ? _s.dbHostTunnelHint
-                    : _s.dbHostDirectHint,
-              ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? _s.requiredField : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _portController,
-              decoration: InputDecoration(labelText: _s.port),
-              keyboardType: TextInputType.number,
-              validator: (v) {
-                final port = int.tryParse(v?.trim() ?? '');
-                if (port == null || port <= 0 || port > 65535) {
-                  return _s.invalidPort;
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _usernameController,
-              decoration: InputDecoration(labelText: _s.username),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? _s.requiredField : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _passwordController,
-              decoration: InputDecoration(
-                labelText: _s.password,
-                hintText: _isEditing ? _s.leaveBlankToKeep : null,
-              ),
-              obscureText: true,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _databaseController,
-              decoration: InputDecoration(labelText: _s.defaultDatabaseOptional),
-            ),
             const SizedBox(height: 20),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
