@@ -178,6 +178,7 @@ class AppStrings {
   String get backToHostList => _t('Kembali ke daftar host', 'Back to host list');
   String get newSession => _t('Sesi baru', 'New session');
   String get reconnect => _t('Sambungkan ulang', 'Reconnect');
+  String get disconnect => _t('Putuskan', 'Disconnect');
   String connectFailed(String error) =>
       _t('Gagal konek: $error', 'Connection failed: $error');
   String get connectionLostReconnecting =>
